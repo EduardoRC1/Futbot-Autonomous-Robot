@@ -1,6 +1,7 @@
 #include "Motores.h" // enlaza con el header que define las funciones y pines de los motores
 
 // 1. Asignar los pines para los motores (estos son ejemplos, el programador debe ajustarlos a su hardware)
+// El código base para los drivers BTS7960.
 const int M1_R_EN = 12;
 const int M1_L_EN = 13;
 const int M1_R_PWM = 14;
