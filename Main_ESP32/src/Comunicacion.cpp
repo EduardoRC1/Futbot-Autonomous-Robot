@@ -1,6 +1,8 @@
+// Comunicacion.cpp, aqui se implementara la logica de comunicacion entre el robot y la camara usando
+// ESP-NOW, un protocolo de comunicacion inalámbrica de baja latencia
 #include "Comunicacion.h"
-#include <WiFi.h>
-#include <esp_now.h>
+#include <WiFi.h> // Necesario para usar ESP-NOW, aunque no estemos usando WiFi tradicional
+#include <esp_now.h> // Libreria de ESP-NOW para manejar la comunicacion entre el robot y la camara
 
 MensajeVision datosCamara;
 bool datosNuevosRecibidos = false;

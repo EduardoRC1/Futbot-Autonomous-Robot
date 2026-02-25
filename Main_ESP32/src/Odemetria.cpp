@@ -1,4 +1,4 @@
-#include "Odemetria.h"
+#include "Odometria.h"
 #include "Sensores.h"
 
 const int ENCODER_IZQ_A = 2; // Hay que revisar si este pin es correcto para el encoder del motor izquierdo

@@ -7,7 +7,7 @@
 // Variable global para almacenar los datos recibidos de la camara 
 extern MensajeVision datosCamara;
 
-void inicilizarRadio();
+void inicializarRadio();
 bool hayDatosNuevos();
 void limpiarBanderaDatos();
 

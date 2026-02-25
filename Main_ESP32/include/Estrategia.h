@@ -13,7 +13,7 @@ enum EstadoRobot {
     EVADIENDO_RIVAL // El robot esta cerca del rival, se aleja para evitar colisionar
 };
 
-void inicilizarEstrtategia();
+void inicializarEstrategia();
 void evaluarEntorno();
 void ejecutarJugadaActual();
 

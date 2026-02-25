@@ -1,47 +1,43 @@
+// Este es el archivo principal del programa
+// Aquí se inicializan todos los subsistemas y se ejecuta el ciclo principal del robot
 #include <Arduino.h>
 #include "Motores.h"
 #include "Sensores.h"
-#include "ProtocoloEspNow.h"
+#include "Odometria.h"
+#include "ControlPID.h"
+#include "Comunicacion.h"
+#include "Estrategia.h"
 
-// ==========================================
-// 1. SETUP (Runs once at boot)
-// ==========================================
 void setup() {
     Serial.begin(115200);
-    Serial.println("Futbot 2026 - Cerebro Central Iniciando...");
-
-    // Call the setup subroutines written by your other programmers
-    inicializarMotores();
-    inicializarBusI2C();
-    inicializarIMU_BNO055();
     
-    Serial.println("Sistemas listos. Esperando silbato...");
+    // Inicializar todos los subsistemas físicos de forma ordenada
+    inicializarMotores(); // Este modulo vive en Motores.cpp
+    inicializarBusI2C(); // Este modulo vive en Sensores.cpp
+    inicializarIMU_BNO055(); // Este modulo vive en Sensores.cpp
+    inicializarToF_VL53L0X(); // Este modulo vive en Sensores.cpp
+    inicializarLinea_QTR8A(); // Este modulo vive en Sensores.cpp
+    
+    // Inicializar los subsistemas de inteligencia y red
+    inicializarOdometria(); // Este modulo vive en Odometria.cpp
+    inicializarPID(); // Este modulo vive en ControlPID.cpp
+    inicializarRadio(); // Este modulo vive en Comunicacion.cpp
+    inicializarEstrategia(); // Este modulo vive en Estrategia.cpp
+    
+    // Estos println solamente son para verificar que se este ejecutando el setup correctamente
+    // Luego se puede eliminar o comentar para ahorrar recursos
+    Serial.println("Robot Defensor Listo! Esperando...");
 }
 
-// ==========================================
-// 2. MAIN LOOP (The continuous decision cycle)
-// ==========================================
 void loop() {
-    // Step 1: Read the environment
-    bool peligroChoque = detectarOponenteFrente();
-    bool limiteCancha = detectarLineaBlanca();
+    // 1. Actualizar el GPS interno (saber dónde estamos)
+    actualizarPosicion();
     
-    // Step 2: Make decisions based on the sensors
-    if (limiteCancha) {
-        // If we are about to cross the white line, stop and pivot!
-        detenerRobot();
-        pivotearDerecha(200); 
-    } 
-    else if (peligroChoque) {
-        // If the ToF laser sees an opponent, stop to avoid a penalty
-        detenerRobot();
-    } 
-    else {
-        // Step 3: Normal gameplay logic goes here
-        // (e.g., If the ESP-NOW camera says the ball is ahead, drive forward)
-        moverRobot(255, 255); 
-    }
-
-    // A tiny delay to keep the scan cycle stable
-    delay(10); 
+    // 2. El director técnico piensa (lee sensores y cámara)
+    evaluarEntorno();
+    
+    // 3. El director técnico actúa (mueve los motores)
+    ejecutarJugadaActual();
+    
+    delay(10); // Pequeña pausa para darle estabilidad al procesador
 }

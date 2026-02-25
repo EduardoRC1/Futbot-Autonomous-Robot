@@ -1,3 +1,5 @@
+// Estrategia.cpp, aqui se implementara la logica
+// Que decide el robot hacer en cada momento, dependiendo de lo que detecten los sensores y la camara
 #include "Estrategia.h"
 #include "Sensores.h"
 #include "Motores.h"
@@ -36,6 +38,7 @@ void evaluarEntorno() {
     }
 }
 
+// Esta funcion se llamara en el loop principal para ejecutar la jugada correspondiente al estado actual del robot
 void ejectuarJugadaActual() {
     switch (estadoActual) {
         case EVADIENDO_LINEA: 
