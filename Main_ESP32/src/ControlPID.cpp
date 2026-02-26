@@ -1,6 +1,7 @@
+// ControlPID.cpp, aqui se implementara la logica del ControlPID(Proporcional, Integral, Derivativo) para ajustar las velocidades 
+// de los motores en base a la posicion del balon detectada por la camara
 #include "ControlPID.h"
-
-// Los siguientes valores son ejemplos, tendran que ser revisados y ajustados
+// Los siguientes valores solo son ejemplos, tendran que ser revisados y ajustados
 
 float Kp = 1.5;
 float Ki = 0.0;
