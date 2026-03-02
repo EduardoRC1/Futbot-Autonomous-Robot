@@ -4,16 +4,29 @@
 #include "Sensores.h"
 #include "Motores.h"
 #include "Comunicacion.h"
+#include "Odometria.h"
+#include "ControlPID.h"
 
 EstadoRobot estadoActual = ESPERANDO_EN_ZONA;
+
+// Limites Virtuales de la cancha (219X158CM)
+const float LIMITE_X_MAX = 214.0;
+const float LIMITE_X_MIN = 5.0;
+const float LIMITE_Y_MAX = 74.0;
+const float LIMITE_Y_MIN = -74.0;
 
 void inicializarEstrategia() {
     estadoActual = ESPERANDO_EN_ZONA;
 }
 
 void evaluarEntorno() {
+    // Estas funciones se pueden llamar cualquier orden para evaluar el entorno
+    float xRobot = obtenerCoordenadaX();
+    float yRobot = obtenerCoordenadaY();
 
-    if (detectarLineaBlanca()) {
+    if (detectarLineaBlanca() ||
+        xRobot > LIMITE_X_MAX || xRobot < LIMITE_X_MIN ||
+        yRobot > LIMITE_Y_MAX || yRobot < LIMITE_Y_MIN) {
         estadoActual = EVADIENDO_LINEA;
         return;
 }
@@ -22,27 +35,26 @@ void evaluarEntorno() {
         return;
     }
 
+    float xBalonAproximado = xRobot + datosCamara.distanciaEstimada;
+
     if (datosCamara.balonDetectado) {
-        if (datosCamara.distanciaEstimada < 40.0) {
-            if (datosCamara.distanciaEstimada < 10.0) {
-                estadoActual = DESPEJANDO;
-            } else {
-                estadoActual = INTERCEPTANDO;
-            }
+        if (xBalonAproximado > 109.5){
+            estadoActual = REGRESANDO_A_BASE;
+        } else if (xBalonAproximado <= 109.5 && datosCamara.distanciaEstimada > 15.0) {
+            estadoActual = INTERCEPTANDO;
         } else {
+            estadoActual = DESPEJANDO;
+        } 
+    } else {
             estadoActual = ESPERANDO_EN_ZONA;
         }
-    } else {
-        estadoActual = REGRESANDO_A_BASE;
-
     }
-}
-
 // Esta funcion se llamara en el loop principal para ejecutar la jugada correspondiente al estado actual del robot
 void ejectuarJugadaActual() {
     switch (estadoActual) {
         case EVADIENDO_LINEA: 
             moverRobot(-200, -200); // Reversa rapida
+            delay (400); // Segun es suficiente tiempo para alejarse de la linea, se puede ajustar segun pruebas
             break;
         
         case EVADIENDO_RIVAL:
@@ -57,9 +69,17 @@ void ejectuarJugadaActual() {
             break;
 
         case DESPEJANDO:
-        // Maxima potencia para despejar el balon lo mas lejos posible
-            moverRobot(255, 255);
-            break;
+        {
+            float anguloActual = leerRumboBrujula();
+            if (anguloActual > 15.0 && anguloActual < 180.0) {
+                pivotearIzquierda(120);
+            } else if (anguloActual >= 180.0 && anguloActual < 345.0) {
+                pivotearDerecha(120);
+            } else {
+                moverRobot(255, 255); 
+            }
+        }
+        break;
 
         case REGRESANDO_A_BASE:
         // Velocidad moderada para volver a la porteria

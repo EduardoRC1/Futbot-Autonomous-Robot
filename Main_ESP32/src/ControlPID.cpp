@@ -28,8 +28,6 @@ int calcularVelocidadPID(float errorActual) {
     float D = Kd * derivada;
 
     errorPrevio = errorActual;
-
-    // Calcular el ajuste total del PWM(Pulse Width Modulation)
-    int ajusteVelocidad = (int)(P + I + D);
-    return ajusteVelocidad;
+    return (int)(P + I + D);
 }
+

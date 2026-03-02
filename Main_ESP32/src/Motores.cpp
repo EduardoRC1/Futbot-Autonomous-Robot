@@ -36,3 +36,6 @@ void moverRobot(int velocidadIzquierda, int velocidadDerecha) {
 void detenerRobot() {
     // Logica para detener ambos motores (por ejemplo, estableciendo las señales PWM a 0)
 }
+
+void pivotearDerecha(int velocidad) {}
+void pivotearIzquierda(int velocidad) {}
