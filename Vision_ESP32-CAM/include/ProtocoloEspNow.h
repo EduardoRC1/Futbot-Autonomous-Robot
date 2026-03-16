@@ -11,8 +11,8 @@ typedef struct MensajeVision {
     bool porteriaEnemigaAlineada; // TRUE si vemos la porteria azul/amarilla
 } MensajeVision;
 
-// MAC Address de la placa ESP32 (solo es un ejemplo ahorita, tendremos que cambiar la luego)
-// Nos falta un cable usb a micro usb
-const uint8_t direccionMacCerebro[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+// Se agrego la direccion MAC del cerebro
+
+const uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0x0F, 0xB0};
 
 #endif
