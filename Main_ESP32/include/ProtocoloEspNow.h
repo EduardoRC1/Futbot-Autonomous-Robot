@@ -10,5 +10,5 @@ typedef struct MensajeVision {
     bool porteriaEnemigaAlineada; 
 } MensajeVision;
 
-const uint8_t direccionMacCerebro[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+const uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0x0F, 0xB0};
 #endif
