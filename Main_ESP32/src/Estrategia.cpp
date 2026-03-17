@@ -50,7 +50,7 @@ void evaluarEntorno() {
         }
     }
 // Esta funcion se llamara en el loop principal para ejecutar la jugada correspondiente al estado actual del robot
-void ejectuarJugadaActual() {
+void ejecutarJugadaActual() {
     switch (estadoActual) {
         case EVADIENDO_LINEA: 
             moverRobot(-200, -200); // Reversa rapida
