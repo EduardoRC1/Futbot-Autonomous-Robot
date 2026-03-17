@@ -24,7 +24,7 @@ float posicionY =0.0; // Posicion inicial del robot en Y, se puede ajustar segun
 void IRAM_ATTR contarPulsoIzquierdo() {pulsosIzquierdos++;}
 void IRAM_ATTR contarPulsoDerecho() {pulsosDerechos++;}
 
-void inicializarOdemetria() {
+void inicializarOdometria() {
     pinMode(ENCODER_IZQ_A, INPUT_PULLUP); // Configurar el pin del encoder izquierdo como entrada con resistencia pull-up
     pinMode(ENCODER_DER_A, INPUT_PULLUP); // Configurar el pin del encoder derecho como entrada con resistencia pull-up
     attachInterrupt(digitalPinToInterrupt(ENCODER_IZQ_A), contarPulsoIzquierdo, RISING); // Configurar interrupcion para el encoder izquierdo
