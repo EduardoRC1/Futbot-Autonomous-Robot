@@ -10,7 +10,7 @@ float Kd = 0.5;
 float errorPrevio = 0;
 float errorAcumulado = 0;
 
-void inicilizarPID() {
+void inicializarPID() {
     errorPrevio = 0;
     errorAcumulado = 0;
 }
