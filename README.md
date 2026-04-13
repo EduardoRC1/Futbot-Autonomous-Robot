@@ -24,5 +24,4 @@ El sistema utiliza una arquitectura de **"doble cerebro"** comunicada vía proto
 1. Clonen este repositorio en su máquina local usando Git.
 2. Instalen **VS Code** e instalen la extensión de **PlatformIO**.
 3. Abran la carpeta `Main_ESP32` o `Vision_ESP32_CAM` como un proyecto de PlatformIO. El archivo `platformio.ini` descargará automáticamente todas las librerías correctas (Adafruit, QTRSensors, ESP32Encoder) para evitar conflictos de versiones.
-4. **Regla de Oro:** NUNCA hagan "commit" directamente a la rama `main`. 
-5. Para empezar a programar, creen una nueva rama para su tarea específica (ej. `feature/control-pid-motores` o `feature/filtro-color-camara`) y al terminar, envíen un **Pull Request**.
+4. Empezar a programar!
