@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
-
+//
 // =========================================================================
 // 1. EL INTERRUPTOR DE ROBOTS (Cambia esto según la cámara que programes)
 // =========================================================================
