@@ -6,13 +6,13 @@
 // =========================================================================
 // 1. EL INTERRUPTOR DE ROBOTS (Cambia esto según la cámara que programes)
 // =========================================================================
-#define ROBOT_A  
-// #define ROBOT_B 
+//#define ROBOT_A  
+#define ROBOT_B 
 
 #ifdef ROBOT_A
   uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0x0F, 0xB0}; // Cerebro A
 #elif defined(ROBOT_B)
-  uint8_t direccionMacCerebro[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Cerebro B (Falta descubrir)
+  uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0xA0, 0x84}; // Cerebro B
 #else
   #error "Define ROBOT_A o ROBOT_B"
 #endif
