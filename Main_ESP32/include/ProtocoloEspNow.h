@@ -5,8 +5,8 @@
 // =========================================================================
 // 1. EL INTERRUPTOR DE ROBOTS (Cambia esto antes de subir el código)
 // =========================================================================
-// #define ROBOT_A  // <- Deja esto así para programar el Cerebro del Robot A
-#define ROBOT_B // <- Quita las barras (//) para programar el Cerebro del Robot B
+#define ROBOT_A  // <- Deja esto así para programar el Cerebro del Robot A
+//#define ROBOT_B // <- Quita las barras (//) para programar el Cerebro del Robot B
 
 // =========================================================================
 // 2. LA ESTRUCTURA DE DATOS (Universal para ambos robots)
