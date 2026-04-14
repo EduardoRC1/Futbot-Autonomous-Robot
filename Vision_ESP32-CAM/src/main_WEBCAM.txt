@@ -3,8 +3,8 @@
 #include "esp_http_server.h"
 
 // --- CAMBIA ESTO POR TU WIFI ---
-const char* ssid = "IZZI-E5D7";
-const char* password = "abarotessol";
+const char* ssid = "Guest_ISA_2.4";
+const char* password = "UDMISA23";
 
 httpd_handle_t stream_httpd = NULL;
 
