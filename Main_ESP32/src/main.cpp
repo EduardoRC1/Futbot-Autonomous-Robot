@@ -1,5 +1,3 @@
-// Este es el archivo principal del programa
-// Aquí se inicializan todos los subsistemas y se ejecuta el ciclo principal del robot
 #include <Arduino.h>
 #include "Motores.h"
 #include "Sensores.h"
@@ -11,33 +9,27 @@
 void setup() {
     Serial.begin(115200);
     
-    // Inicializar todos los subsistemas físicos de forma ordenada
-    inicializarMotores(); // Este modulo vive en Motores.cpp
-    inicializarBusI2C(); // Este modulo vive en Sensores.cpp
-    inicializarIMU_BNO055(); // Este modulo vive en Sensores.cpp
-    inicializarToF_VL53L0X(); // Este modulo vive en Sensores.cpp
-    inicializarLinea_QTR8A(); // Este modulo vive en Sensores.cpp
+    // 1. Inicializar todo el hardware Físico
+    inicializarMotores(); 
+    inicializarBusI2C(); 
+    inicializarIMU_BNO055(); 
+    inicializarToF_VL53L0X(); 
+    inicializarLinea_QTR8A(); 
     
-    // Inicializar los subsistemas de inteligencia y red
-    inicializarOdometria(); // Este modulo vive en Odometria.cpp
-    inicializarPID(); // Este modulo vive en ControlPID.cpp
-    inicializarRadio(); // Este modulo vive en Comunicacion.cpp
-    inicializarEstrategia(); // Este modulo vive en Estrategia.cpp
+    // 2. Inicializar Inteligencia y Red
+    inicializarOdometria();  
+    inicializarPID();        
+    inicializarRadio(); // Enciende ESP-NOW en Canal 1
+    inicializarEstrategia(); 
     
-    // Estos println solamente son para verificar que se este ejecutando el setup correctamente
-    // Luego se puede eliminar o comentar para ahorrar recursos
-    Serial.println("Robot Defensor Listo! Esperando...");
+    Serial.println("¡Robot Futbot Listo!");
 }
 
 void loop() {
-    // 1. Actualizar el GPS interno (saber dónde estamos)
     actualizarPosicion();
-    
-    // 2. El director técnico piensa (lee sensores y cámara)
     evaluarEntorno();
-    
-    // 3. El director técnico actúa (mueve los motores)
     ejecutarJugadaActual();
+    revisarConexionSegura();
     
-    delay(10); // Pequeña pausa para darle estabilidad al procesador
+    delay(10); // Un delay de 10ms al final del loop para no saturar el microcontrolador
 }

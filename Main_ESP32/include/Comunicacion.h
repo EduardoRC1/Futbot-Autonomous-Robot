@@ -1,3 +1,4 @@
+// Comunicacion.h
 #ifndef COMUNICACION_H
 #define COMUNICACION_H
 
@@ -10,6 +11,7 @@ extern MensajeVision datosCamara;
 void inicializarRadio();
 bool hayDatosNuevos();
 void limpiarBanderaDatos();
+void revisarConexionSegura();
 
 #endif // COMUNICACION_H
 

@@ -1,40 +1,17 @@
+#define ROBOT_A // Descomentar para compilar el código del Robot A (Cerebro A)
+// #define ROBOT_B // Descomentar para compilar el código del Robot B (Cerebro B)
+
+
 #include "esp_camera.h"
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
-//
-// =========================================================================
-// 1. EL INTERRUPTOR DE ROBOTS (Cambia esto según la cámara que programes)
-// =========================================================================
-#define ROBOT_A  
-//#define ROBOT_B 
-
-#ifdef ROBOT_A
-  uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0x0F, 0xB0}; // Cerebro A
-#elif defined(ROBOT_B)
-  uint8_t direccionMacCerebro[] = {0x00, 0x70, 0x07, 0x1C, 0xA0, 0x84}; // Cerebro B
-#else
-  #error "Define ROBOT_A o ROBOT_B"
-#endif
-
-// =========================================================================
-// 2. LA ESTRUCTURA DE DATOS (Debe ser IDÉNTICA a la del Cerebro Central)
-// =========================================================================
-typedef struct MensajeVision {
-    bool balonDetectado;
-    int16_t coordX;
-    int16_t coordY;
-    float distanciaEstimada;
-    bool porteriaEnemigaAlineada;
-} MensajeVision;
+#include <esp_wifi.h>
+#include "ProtocoloEspNow.h" // <--- Usar el archivo centralizado
 
 MensajeVision datosSalida;
 
-// =========================================================================
-// 3. CALIBRACIÓN DE COLOR (Valores para la pelota del torneo)
-// =========================================================================
-// Estos son valores de ejemplo para un naranja brillante. 
-// Deberás ajustarlos en la cancha real usando el WebServer.
+// --- CALIBRACIÓN DE COLOR (Ajustar en el torneo) ---
 int rMin = 150, rMax = 255;
 int gMin = 50,  gMax = 150;
 int bMin = 0,   bMax = 60;
@@ -42,7 +19,7 @@ int bMin = 0,   bMax = 60;
 void setup() {
   Serial.begin(115200);
 
-  // --- CONFIGURACIÓN DE LA CÁMARA (Modelo Ai-Thinker) ---
+  // Configuración de Hardware (Ai-Thinker)
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -51,27 +28,24 @@ void setup() {
   config.pin_xclk = 0; config.pin_pclk = 22; config.pin_vsync = 25; config.pin_href = 23;
   config.pin_sscb_sda = 26; config.pin_sscb_scl = 27; config.pin_pwdn = 32;
   config.pin_reset = -1; config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_RGB565; // Formato a color para procesar rápido
-  config.frame_size = FRAMESIZE_QVGA;     // Resolución baja = procesador más rápido
-  config.fb_count = 1;
+  config.pixel_format = PIXFORMAT_RGB565; 
+  config.frame_size = FRAMESIZE_QVGA;     
+  config.fb_count = 2; // <--- Cambiado a 2 para procesar un frame mientras se captura otro (Double Buffer)
 
   esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
-    Serial.printf("Error fatal: Cámara no iniciada 0x%x", err);
-    return;
-  }
+  if (err != ESP_OK) return;
 
-  // --- CONFIGURACIÓN ESP-NOW ---
+  // Configuración ESP-NOW
   WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
   if (esp_now_init() != ESP_OK) return;
 
   esp_now_peer_info_t peerInfo = {};
   memcpy(peerInfo.peer_addr, direccionMacCerebro, 6);
-  peerInfo.channel = 0;  
+  peerInfo.channel = 1;
   peerInfo.encrypt = false;
   esp_now_add_peer(&peerInfo);
-
-  Serial.println("Cámara Lista. Iniciando visión...");
 }
 
 void loop() {
@@ -81,14 +55,16 @@ void loop() {
   int pixelesEncontrados = 0;
   long sumaX = 0, sumaY = 0;
 
-  // Escaneo rápido de la imagen (saltando píxeles de 2 en 2 para mayor velocidad)
-  for (int i = 0; i < (fb->width * fb->height); i += 2) {
+  // OPTIMIZACIÓN: Saltamos píxeles de 4 en 4 (Paso de 8 bytes en RGB565)
+  // Esto aumenta los FPS significativamente sin perder mucha precisión.
+  for (int i = 0; i < (fb->width * fb->height); i += 4) {
     uint16_t pixel = ((uint16_t*)fb->buf)[i];
+    
+    // Extracción rápida de RGB
     uint8_t r = (pixel >> 11) << 3;
     uint8_t g = ((pixel >> 5) & 0x3F) << 2;
     uint8_t b = (pixel & 0x1F) << 3;
 
-    // Si el píxel está dentro del rango de color de nuestra pelota...
     if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
       sumaX += (i % fb->width);
       sumaY += (i / fb->width);
@@ -96,18 +72,20 @@ void loop() {
     }
   }
 
-  // Si encontramos una mancha de color lo suficientemente grande...
-  if (pixelesEncontrados > 20) { 
+  // Solo enviamos si la "masa" de color es suficiente para no perseguir ruido
+  if (pixelesEncontrados > 15) { 
     datosSalida.balonDetectado = true;
-    datosSalida.coordX = sumaX / pixelesEncontrados; // Centroide X
-    datosSalida.coordY = sumaY / pixelesEncontrados; // Centroide Y
-    Serial.printf("Pelota en: X=%d, Y=%d\n", datosSalida.coordX, datosSalida.coordY);
+    datosSalida.coordX = sumaX / pixelesEncontrados;
+    datosSalida.coordY = sumaY / pixelesEncontrados;
+    
+    // Cálculo de distancia básica (entre más píxeles, más cerca está)
+    datosSalida.distanciaEstimada = 5000.0 / sqrt(pixelesEncontrados); 
   } else {
     datosSalida.balonDetectado = false;
   }
 
-  // Enviar paquete al Cerebro Central
+  // Enviar al Cerebro
   esp_now_send(direccionMacCerebro, (uint8_t *) &datosSalida, sizeof(datosSalida));
   
-  esp_camera_fb_return(fb); // Liberar memoria (Crítico para que no se congele)
+  esp_camera_fb_return(fb); 
 }

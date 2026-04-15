@@ -1,3 +1,4 @@
+// Estrategia.h
 #ifndef ESTRATEGIA_H
 #define ESTRATEGIA_H
 
