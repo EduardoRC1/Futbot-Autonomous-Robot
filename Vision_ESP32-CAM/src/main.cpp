@@ -1,7 +1,3 @@
-#define ROBOT_A // Descomentar para compilar el código del Robot A (Cerebro A)
-// #define ROBOT_B // Descomentar para compilar el código del Robot B (Cerebro B)
-
-
 #include "esp_camera.h"
 #include <Arduino.h>
 #include <esp_now.h>
@@ -11,10 +7,10 @@
 
 MensajeVision datosSalida;
 
-// --- CALIBRACIÓN DE COLOR (Ajustar en el torneo) ---
-int rMin = 150, rMax = 255;
-int gMin = 50,  gMax = 150;
-int bMin = 0,   bMax = 60;
+// --- CALIBRACIÓN DE COLOR AMPLIA (Modo de Búsqueda) ---
+int rMin = 90,  rMax = 255; // Permitimos rojos/naranjas más oscuros
+int gMin = 20,  gMax = 180; // Permitimos más mezcla de amarillo/luz
+int bMin = 0,   bMax = 90;  // Permitimos un poco de reflejo azulado de ventanas o monitores
 
 void setup() {
   Serial.begin(115200);
@@ -30,7 +26,7 @@ void setup() {
   config.pin_reset = -1; config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_RGB565; 
   config.frame_size = FRAMESIZE_QVGA;     
-  config.fb_count = 2; // <--- Cambiado a 2 para procesar un frame mientras se captura otro (Double Buffer)
+  config.fb_count = 1;
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) return;
@@ -55,15 +51,18 @@ void loop() {
   int pixelesEncontrados = 0;
   long sumaX = 0, sumaY = 0;
 
-  // OPTIMIZACIÓN: Saltamos píxeles de 4 en 4 (Paso de 8 bytes en RGB565)
-  // Esto aumenta los FPS significativamente sin perder mucha precisión.
+  // OPTIMIZACIÓN: Saltamos píxeles de 4 en 4
   for (int i = 0; i < (fb->width * fb->height); i += 4) {
-    uint16_t pixel = ((uint16_t*)fb->buf)[i];
     
-    // Extracción rápida de RGB
-    uint8_t r = (pixel >> 11) << 3;
-    uint8_t g = ((pixel >> 5) & 0x3F) << 2;
-    uint8_t b = (pixel & 0x1F) << 3;
+    // CORRECCIÓN 1: Leer los colores en el orden correcto (Extracción byte por byte)
+    // Esto cura el "daltonismo" del ESP32
+    uint8_t highByte = fb->buf[i * 2];
+    uint8_t lowByte  = fb->buf[i * 2 + 1];
+    
+    // Extracción matemática exacta de RGB565 a escala 0-255
+    uint8_t r = highByte & 0xF8;
+    uint8_t g = ((highByte & 0x07) << 5) | ((lowByte & 0xE0) >> 3);
+    uint8_t b = (lowByte & 0x1F) << 3;
 
     if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
       sumaX += (i % fb->width);
@@ -72,13 +71,13 @@ void loop() {
     }
   }
 
-  // Solo enviamos si la "masa" de color es suficiente para no perseguir ruido
-  if (pixelesEncontrados > 15) { 
+  // CORRECCIÓN 2: Exigimos ver al menos 150 píxeles reales, no solo 15 de estática
+  if (pixelesEncontrados > 50) { 
     datosSalida.balonDetectado = true;
     datosSalida.coordX = sumaX / pixelesEncontrados;
     datosSalida.coordY = sumaY / pixelesEncontrados;
     
-    // Cálculo de distancia básica (entre más píxeles, más cerca está)
+    // Cálculo de distancia básica
     datosSalida.distanciaEstimada = 5000.0 / sqrt(pixelesEncontrados); 
   } else {
     datosSalida.balonDetectado = false;

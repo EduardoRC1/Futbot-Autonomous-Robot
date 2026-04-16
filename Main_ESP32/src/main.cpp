@@ -9,7 +9,7 @@
 void setup() {
     Serial.begin(115200);
     
-    // 1. Inicializar todo el hardware Físico
+    // 1. Inicializar hardware físico
     inicializarMotores(); 
     inicializarBusI2C(); 
     inicializarIMU_BNO055(); 
@@ -19,17 +19,31 @@ void setup() {
     // 2. Inicializar Inteligencia y Red
     inicializarOdometria();  
     inicializarPID();        
-    inicializarRadio(); // Enciende ESP-NOW en Canal 1
-    inicializarEstrategia(); 
+    inicializarRadio(); // Enciende ESP-NOW
+    inicializarEstrategia(); // ¡Estrategia encendida!
     
-    Serial.println("¡Robot Futbot Listo!");
+    Serial.println("¡Robot Futbot 100% Online y Listo!");
 }
 
 void loop() {
+    // 3. Ciclo de pensamiento y movimiento
     actualizarPosicion();
-    evaluarEntorno();
+    evaluarEntorno();      
     ejecutarJugadaActual();
-    revisarConexionSegura();
     
-    delay(10); // Un delay de 10ms al final del loop para no saturar el microcontrolador
+    revisarConexionSegura(); 
+    
+    // 4. Monitoreo en pantalla (Opcional, pero muy útil)
+    if (hayDatosNuevos()) {
+        Serial.print("📡 CEREBRO ESCUCHA: Pelota = ");
+        Serial.print(datosCamara.balonDetectado);
+        Serial.print(" | Coord X = ");
+        Serial.print(datosCamara.coordX);
+        Serial.print(" | Coord Y = ");
+        Serial.println(datosCamara.coordY);
+
+        limpiarBanderaDatos(); // Reset the flag
+    }
+    
+    delay(10); 
 }
