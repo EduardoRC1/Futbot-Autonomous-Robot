@@ -14,4 +14,3 @@ void limpiarBanderaDatos();
 void revisarConexionSegura();
 
 #endif // COMUNICACION_H
-

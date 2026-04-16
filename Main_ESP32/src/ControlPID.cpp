@@ -3,9 +3,9 @@
 #include "ControlPID.h"
 // Los siguientes valores solo son ejemplos, tendran que ser revisados y ajustados
 
-float Kp = 1.5;
-float Ki = 0.0;
-float Kd = 0.5;
+float Kp = 1.5; // Ganacia Proporcional
+float Ki = 0.0; // Ganancia Integral
+float Kd = 0.5; // Ganancia Derivativa
 
 float errorPrevio = 0;
 float errorAcumulado = 0;

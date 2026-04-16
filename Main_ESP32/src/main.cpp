@@ -5,7 +5,7 @@
 #include "ControlPID.h"
 #include "Comunicacion.h"
 #include "Estrategia.h"
-
+ 
 void setup() {
     Serial.begin(115200);
     
@@ -35,14 +35,14 @@ void loop() {
     
     // 4. Monitoreo en pantalla (Opcional, pero muy útil)
     if (hayDatosNuevos()) {
-        Serial.print("📡 CEREBRO ESCUCHA: Pelota = ");
-        Serial.print(datosCamara.balonDetectado);
-        Serial.print(" | Coord X = ");
-        Serial.print(datosCamara.coordX);
-        Serial.print(" | Coord Y = ");
-        Serial.println(datosCamara.coordY);
+        // Serial.print("📡 CEREBRO ESCUCHA: Pelota = ");
+        // Serial.print(datosCamara.balonDetectado);
+        // Serial.print(" | Coord X = ");
+        // Serial.print(datosCamara.coordX);
+        // Serial.print(" | Coord Y = ");
+        // Serial.println(datosCamara.coordY);
 
-        limpiarBanderaDatos(); // Reset the flag
+        // limpiarBanderaDatos(); // Reset the flag
     }
     
     delay(10); 

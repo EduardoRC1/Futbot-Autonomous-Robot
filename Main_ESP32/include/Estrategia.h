@@ -5,6 +5,7 @@
 #include <Arduino.h>
 
 // nuestro robot jugara como DEFENSA, por lo que su estrategia se basara en defender nuestra porteria y despejar el balon hacia la porteria rival
+// enum agrupa varios estados posibles del robot
 enum EstadoRobot {
     ESPERANDO_EN_ZONA, // Patrullando la zona
     INTERCEPTANDO, // Entra a nuestra zona para interceptar al rival
@@ -13,6 +14,8 @@ enum EstadoRobot {
     EVADIENDO_LINEA, // El robot esta cerca de la linea, se aleja para evitar salirse
     EVADIENDO_RIVAL // El robot esta cerca del rival, se aleja para evitar colisionar
 };
+
+// Definimos las funciones principales de la estrategia 
 
 void inicializarEstrategia();
 void evaluarEntorno();
