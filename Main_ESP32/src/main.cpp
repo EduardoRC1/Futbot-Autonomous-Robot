@@ -1,3 +1,5 @@
+// Codigo principal de nuestro proyecto, para una visualizacion sobre el flujo de el robot --> docs/Diagrama_Flujo_Robot.pdf 
+
 #include <Arduino.h>
 #include "Motores.h"
 #include "Sensores.h"
