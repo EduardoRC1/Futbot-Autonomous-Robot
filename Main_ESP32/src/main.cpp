@@ -24,7 +24,7 @@ void setup() {
     inicializarRadio(); // Enciende ESP-NOW
     inicializarEstrategia(); // ¡Estrategia encendida!
     
-    Serial.println("¡Robot Futbot 100% Online y Listo!");
+    Serial.println("Robot Futbot Listo!");
 }
 
 void loop() {
