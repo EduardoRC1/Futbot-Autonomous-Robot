@@ -16,7 +16,7 @@ const int TOF_RIGHT_XSHUT = 19;
 // 0x31 -> Reservado para Láser Izquierda
 // 0x32 -> Reservado para Láser Derecha
 
-Adafruit_BNO055 brujula = Adafruit_BNO055(55, 0x29, &Wire); // Forzamos 0x29
+Adafruit_BNO055 brujula = Adafruit_BNO055(55, 0x28, &Wire);
 Adafruit_VL53L0X tofFrente = Adafruit_VL53L0X(); 
 Adafruit_VL53L0X tofIzquierda = Adafruit_VL53L0X();
 Adafruit_VL53L0X tofDerecha = Adafruit_VL53L0X();
@@ -28,12 +28,13 @@ uint16_t valoresSensor[6];
 void inicializarBusI2C() { Wire.begin(); }
 
 void inicializarIMU_BNO055() {
-    // Intentar iniciar la brújula en 0x29
+    delay(500); 
+    // IMPORTANTE: begin() va completamente vacío
     if (brujula.begin()) { 
         brujula.setExtCrystalUse(true); 
-        Serial.println("BNO055 Iniciado en 0x29");
+        Serial.println("BNO055 Iniciado OK en 0x28");
     } else {
-        Serial.println("Error: BNO055 no encontrado en 0x29");
+        Serial.println("Error: BNO055 no encontrado en 0x28");
     }
 }
 
