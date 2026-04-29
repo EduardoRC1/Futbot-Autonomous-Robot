@@ -72,4 +72,4 @@ void pivotearDerecha(int velocidad) {
 
 void pivotearIzquierda(int velocidad) { 
     moverRobot(-velocidad, velocidad); 
-}
+}   
