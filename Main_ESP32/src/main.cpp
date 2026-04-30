@@ -1,30 +1,32 @@
+// Script para hacer test de los motores
 #include <Arduino.h>
-#include <Wire.h>
-#include "Adafruit_VL53L0X.h"
 
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+// Pines del BTS7960
+const int M1_R_EN = 12; const int M1_L_EN = 13;
+const int M1_R_PWM = 14; const int M1_L_PWM = 27;
+const int M2_R_EN = 25; const int M2_L_EN = 26;
+const int M2_R_PWM = 15; const int M2_L_PWM = 23;
 
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Iniciando prueba de VL53L0X...");
-  
-  if (!lox.begin()) {
-    Serial.println("Fallo al iniciar VL53L0X. Revisa los cables SDA/SCL.");
-    while(1); // Se detiene aquí si hay error
-  }
-  Serial.println("VL53L0X Listo. Mueve un objeto frente al sensor.");
+    Serial.begin(115200);
+    pinMode(M1_R_EN, OUTPUT); pinMode(M1_L_EN, OUTPUT);
+    pinMode(M1_R_PWM, OUTPUT); pinMode(M1_L_PWM, OUTPUT);
+    pinMode(M2_R_EN, OUTPUT); pinMode(M2_L_EN, OUTPUT);
+    pinMode(M2_R_PWM, OUTPUT); pinMode(M2_L_PWM, OUTPUT);
+
+// Habilitar drivers
+    digitalWrite(M1_R_EN, HIGH); digitalWrite(M1_L_EN, HIGH);
+    digitalWrite(M2_R_EN, HIGH); digitalWrite(M2_L_EN, HIGH);
 }
 
 void loop() {
-  VL53L0X_RangingMeasurementData_t measure;
-  lox.rangingTest(&measure, false); 
+    Serial.println("Motores ADELANTE a 40% de potencia");
+    analogWrite(M1_R_PWM, 100); analogWrite(M1_L_PWM, 0); // Izquierdo
+    analogWrite(M2_R_PWM, 100); analogWrite(M2_L_PWM, 0); // Derecho
+    delay(3000);
 
-  if (measure.RangeStatus != 4) {  // 4 significa "fuera de rango"
-    Serial.print("Distancia al obstáculo: ");
-    Serial.print(measure.RangeMilliMeter);
-    Serial.println(" mm");
-  } else {
-    Serial.println("Fuera de rango (Demasiado lejos)");
-  }
-  delay(100);
+    Serial.println("Motores DETENIDOS");
+    analogWrite(M1_R_PWM, 0); analogWrite(M1_L_PWM, 0);
+    analogWrite(M2_R_PWM, 0); analogWrite(M2_L_PWM, 0);
+    delay(2000);
 }
