@@ -1,61 +1,51 @@
 #include "Motores.h"
 #include <Arduino.h>
 
-// --- PINES PARA EL DRIVER BTS7960 (IZQUIERDO - U2) ---
-// Según diagrama: Línea verde al 27, Línea roja al 14
+// --- PINES PARA EL DRIVER BTS7960 ---
 const int M1_R_PWM = 27; 
 const int M1_L_PWM = 14; 
-
-// --- PINES PARA EL DRIVER BTS7960 (DERECHO - U3) ---
-// Según diagrama: Línea verde al 12, Línea roja al 13
 const int M2_R_PWM = 12; 
 const int M2_L_PWM = 13; 
 
-// NOTA: Los pines EN (Enable) ya no se declaran porque están 
-// conectados directamente a 5V en el hardware.
-
 void inicializarMotores() {
-    // 1. Configurar el hardware PWM del ESP32 (Frecuencia 5000Hz, Resolucion 8-bit [0-255])
-    
-    // Motor Izquierdo (M1)
+    // Configuración PWM ESP32
     ledcSetup(0, 5000, 8); 
-    ledcAttachPin(M1_R_PWM, 0); // Canal 0: Giro A
+    ledcAttachPin(M1_R_PWM, 0); 
     
     ledcSetup(1, 5000, 8); 
-    ledcAttachPin(M1_L_PWM, 1); // Canal 1: Giro B
+    ledcAttachPin(M1_L_PWM, 1); 
     
-    // Motor Derecho (M2)
     ledcSetup(2, 5000, 8); 
-    ledcAttachPin(M2_R_PWM, 2); // Canal 2: Giro A
+    ledcAttachPin(M2_R_PWM, 2); 
     
     ledcSetup(3, 5000, 8); 
-    ledcAttachPin(M2_L_PWM, 3); // Canal 3: Giro B
+    ledcAttachPin(M2_L_PWM, 3); 
     
     detenerRobot();
-    Serial.println("Motores configurados con pines del diagrama (EN hardwired a 5V).");
+    Serial.println("Motores listos.");
 }
 
-void moverRobot(int velocidadIzquierda, int velocidadDerecha) {
-    // Limitar velocidades por seguridad entre -255 y 255
+// CORRECCIÓN: Cambiado de moverRobot a moverMotores
+void moverMotores(int velocidadIzquierda, int velocidadDerecha) {
     velocidadIzquierda = constrain(velocidadIzquierda, -255, 255);
     velocidadDerecha = constrain(velocidadDerecha, -255, 255);
 
-    // --- CONTROL MOTOR IZQUIERDO ---
+    // --- MOTOR IZQUIERDO ---
     if (velocidadIzquierda >= 0) {
-        ledcWrite(1, 0);                  // Apagar canal B
-        ledcWrite(0, velocidadIzquierda); // Inyectar PWM en canal A
+        ledcWrite(1, 0);                  // Apagar reversa
+        ledcWrite(0, velocidadIzquierda); // Avanzar
     } else {
-        ledcWrite(0, 0);                   // Apagar canal A
-        ledcWrite(1, -velocidadIzquierda); // Inyectar PWM en canal B
+        ledcWrite(0, 0);                  // Apagar avance
+        ledcWrite(1, abs(velocidadIzquierda)); // Reversa (valor positivo)
     }
 
-    // --- CONTROL MOTOR DERECHO ---
+    // --- MOTOR DERECHO ---
     if (velocidadDerecha >= 0) {
-        ledcWrite(3, 0);                // Apagar canal B
-        ledcWrite(2, velocidadDerecha); // Inyectar PWM en canal A
+        ledcWrite(3, 0);                  // Apagar reversa
+        ledcWrite(2, velocidadDerecha);   // Avanzar
     } else {
-        ledcWrite(2, 0);                 // Apagar canal A
-        ledcWrite(3, -velocidadDerecha); // Inyectar PWM en canal B
+        ledcWrite(2, 0);                  // Apagar avance
+        ledcWrite(3, abs(velocidadDerecha));   // Reversa (valor positivo)
     }
 }
 
@@ -66,10 +56,11 @@ void detenerRobot() {
     ledcWrite(3, 0);
 }
 
+// Estas también deben llamar a moverMotores
 void pivotearDerecha(int velocidad) { 
-    moverRobot(velocidad, -velocidad); 
+    moverMotores(velocidad, -velocidad); 
 }
 
 void pivotearIzquierda(int velocidad) { 
-    moverRobot(-velocidad, velocidad); 
-}   
+    moverMotores(-velocidad, velocidad); 
+}

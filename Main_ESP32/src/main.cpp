@@ -1,96 +1,82 @@
-
-// Codigo principal de nuestro proyecto, para una visualizacion 
-//sobre el flujo del robot --> docs/Diagrama_Flujo_Robot.pdf 
-
 #include <Arduino.h>
 #include "Motores.h"
 #include "Sensores.h"
-#include "Odometria.h"
-#include "ControlPID.h"
 #include "Comunicacion.h"
 #include "Estrategia.h"
 
-extern EstadoRobot estadoActual;
-extern MensajeVision datosCamara;
-
-// --- FUNCION DE TELEMETRIA (Monitoreo sin bloquear el procesador) ---
-void imprimirTelemetria() {
-    // 4. Monitoreo de Sensores Crudos (Modo Debug)
-    static unsigned long ultimoPrintSensores = 0;
-    
-    // Imprime el reporte solo cada 500 milisegundos (2 veces por segundo)
-    if (millis() - ultimoPrintSensores > 500) { 
-        Serial.println("--- REPORTE DE SENSORES ---");
-        
-        // 1. Suelo (QTR-8A)
-        Serial.print("🚥 SUELO: Línea Blanca = ");
-        Serial.println(detectarLineaBlanca() ? "¡PELIGRO (SI)!" : "Seguro (NO)");
-
-        // 2. Láser Frontal (VL53L0X)
-        Serial.print("📏 LÁSER: Rival Cerca = ");
-        Serial.println(detectarOponenteFrente() ? "¡OBSTÁCULO (SI)!" : "Despejado (NO)");
-
-        // 3. Radio / Cámara (ESP-NOW)
-        if (hayDatosNuevos()) {
-            Serial.print("📸 CÁMARA: Pelota="); 
-            Serial.print(datosCamara.balonDetectado ? "VISTA" : "PERDIDA");
-            Serial.print(" | X="); 
-            Serial.print(datosCamara.coordX);
-            Serial.print(" | Distancia="); 
-            Serial.println(datosCamara.distanciaEstimada);
-            
-            limpiarBanderaDatos(); // Resetea la bandera de nuevo mensaje
-        } else {
-            Serial.println("📸 CÁMARA: Esperando conexión/datos...");
-        }
-        
-        Serial.println("---------------------------");
-        ultimoPrintSensores = millis(); // Reinicia el temporizador
-    }
-}
+// Variables globales que vienen de otros archivos
+extern MensajeVision datosCamara; 
 
 void setup() {
     Serial.begin(115200);
-    
-    // 1. Inicializar hardware físico
+    Serial.println(">>> SISTEMA DE COMBATE FUTBOT V1.0 <<<");
+
+    // 1. Hardware Crítico
     inicializarMotores(); 
-    inicializarBusI2C(); 
-    inicializarIMU_BNO055(); 
+    inicializarBusI2C(); // Configurado a pines 21 y 22
+    
+    // 2. Sensores (Si fallan, el código sigue)
     inicializarToF_VL53L0X(); 
     inicializarLinea_QTR8A(); 
     
-    // 2. Inicializar Inteligencia y Red
-    inicializarOdometria();  
-    inicializarPID();        
-    inicializarRadio(); // Enciende ESP-NOW
-    inicializarEstrategia(); // ¡Estrategia encendida!
+    // 3. Comunicación con la Cámara (ESP-NOW)
+    // Esto es vital porque no depende del I2C
+    inicializarRadio(); 
     
-    Serial.println("Robot Futbot Listo! Iniciando escaneo del entorno...");
+    // 4. Lógica de Juego
+    inicializarEstrategia(); 
+
+    Serial.println(">>> ROBOT EN LINEA - ESPERANDO INICIO <<<");
+    
+    // --- GIRO DE CONFIRMACIÓN 360 ---
+    Serial.println("Giro de prueba iniciado...");
+    moverMotores(180, -180); // Empieza a girar sobre su eje
+    delay(800);              // Ajusta este tiempo (ms) para que sea un giro completo
+    detenerRobot();          // Se detiene un momento antes de empezar a pelear
+    delay(500);
+    
+    Serial.println("Robot listo y encendido.");
 }
 
 void loop() {
-    // 3. Ciclo de pensamiento y movimiento
-    actualizarPosicion();
-    evaluarEntorno();      
-    ejecutarJugadaActual();
-    
-    revisarConexionSegura(); 
-    
-    // 4. (Opcional) Leer datos crudos de la cámara si hay un error de posición
-    if (hayDatosNuevos()) {
-        // Descomenta esto solo si necesitas ver las coordenadas exactas de los píxeles
-        Serial.print("📡 CEREBRO ESCUCHA: Pelota = ");
-        Serial.print(datosCamara.balonDetectado);
-        Serial.print(" | Coord X = ");
-        Serial.print(datosCamara.coordX);
-        Serial.print(" | Coord Y = ");
-        Serial.println(datosCamara.coordY);
-
-        // limpiarBanderaDatos(); // Reset the flag
+    // A. REVISAR SEGURIDAD (Línea Blanca)
+    // Si detectamos borde, retroceder es prioridad máxima
+    if (detectarLineaBlanca()) {
+        Serial.println("!!! LINEA DETECTADA - EVADIENDO !!!");
+        moverMotores(-200, -200);
+        delay(300);
+        moverMotores(150, -150); // Giro rápido
+        delay(200);
+    } 
+    else {
+        // B. LÓGICA DE ATAQUE (Basada en Cámara)
+        if (hayDatosNuevos()) {
+            // Si la cámara ve la pelota, ir tras ella
+            if (datosCamara.balonDetectado) {
+                Serial.println("Pelota vista - ATACANDO");
+                // Lógica simple: Seguir la coordenada X
+                if (datosCamara.coordX < 140) { // Pelota a la izquierda
+                    moverMotores(100, 180);
+                } else if (datosCamara.coordX > 180) { // Pelota a la derecha
+                    moverMotores(180, 100);
+                } else { // Pelota al centro
+                    moverMotores(255, 255); // ¡FULL POWER!
+                }
+            } else {
+                // Si no ve la pelota, girar para buscarla
+                moverMotores(120, -120);
+            }
+            limpiarBanderaDatos();
+        } 
+        
+        // C. LÓGICA DE OPONENTE (Láseres)
+        // Si el láser de frente detecta algo, ignorar cámara y embestir
+        if (detectarOponenteFrente()) {
+            Serial.println("Oponente detectado - EMBESTIR");
+            moverMotores(255, 255);
+        }
     }
-    
-    // 5. Monitoreo general en pantalla de la máquina de estados
-    imprimirTelemetria();
-    
-    delay(10); // Pausa de 10ms para estabilidad del ciclo
+
+    // Pequeña pausa para estabilidad
+    delay(10); 
 }

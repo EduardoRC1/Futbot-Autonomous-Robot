@@ -4,7 +4,7 @@
 // BORRA LOS PINES DE AQUÍ. SOLO DEJA ESTAS FUNCIONES:
 
 void inicializarMotores();
-void moverRobot(int velocidadIzquierda, int velocidadDerecha);
+void moverMotores(int velocidadIzquierda, int velocidadDerecha);
 void detenerRobot();
 void pivotearDerecha(int velocidad);
 void pivotearIzquierda(int velocidad);
