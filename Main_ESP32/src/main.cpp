@@ -30,8 +30,13 @@ void setup() {
     inicializarBusI2C();
 
     // 3. Sensores I2C — orden importante (ver nota en Sensores.cpp)
-    inicializarToF_VL53L0X();   // Láseres primero — asignan direcciones únicas
-    inicializarIMU_BNO055();    // Brújula después — no reinicia el bus
+
+    // =======AQUI SE COMENTAN PARA HACER PRUEBA=============
+
+    // inicializarToF_VL53L0X();   // Láseres primero — asignan direcciones únicas
+    // inicializarIMU_BNO055();    // Brújula después — no reinicia el bus
+
+    // =============AQUI SE DESCOMENTAN PARA HACER PRUEBA=============
 
     // 4. Sensor de línea (analógico, independiente)
     inicializarLinea_QTR8A();
@@ -40,8 +45,12 @@ void setup() {
     inicializarRadio();
 
     // 6. Odometría (encoders)
-    inicializarOdometria();
+    // =========IGUAL SE COMENTARA==============
+    
+    // inicializarOdometria();
 
+    // =========IGUAL SE DESCOMENTARA==============
+    
     // 7. Lógica de juego
     inicializarEstrategia();
 
