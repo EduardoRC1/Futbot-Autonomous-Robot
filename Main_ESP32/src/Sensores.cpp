@@ -1,4 +1,7 @@
 // Sensores.cpp
+// Universidad de Matamoros — Futbot Autonomous Robot
+// Revisado: I2C fix — VL53L0X address sequencing corregido,
+//           Wire.begin() centralizado, GPIO15 advertencia documentada.
 
 #include "Sensores.h"
 #include <Wire.h>

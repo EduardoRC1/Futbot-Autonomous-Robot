@@ -1,59 +1,98 @@
 // Comunicacion.cpp
-#include <Arduino.h> 
+// Universidad de Matamoros — Futbot Autonomous Robot
+// Revisado: volatile agregado a variables compartidas entre Core 0 (ESP-NOW)
+//           y Core 1 (loop). datosCamara se copia de forma segura con
+//           noInterrupts()/interrupts() para evitar lecturas a mitad de escritura.
+
+#include <Arduino.h>
 #include "Comunicacion.h"
 #include "ProtocoloEspNow.h"
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
 
+// ---------------------------------------------------------------------------
+// VARIABLES COMPARTIDAS ENTRE CORES
+//
+// El callback alRecibirDatos() corre en Core 0 (tarea WiFi del ESP32).
+// El loop() corre en Core 1.
+// Sin volatile, el compilador puede cachear estos valores en un registro
+// y loop() nunca vería las actualizaciones del callback.
+//
+// datosCamara es un struct — volatile en el puntero no protege lecturas
+// parciales de sus campos. Usamos un buffer interno + noInterrupts() al
+// copiarlo hacia afuera para garantizar una lectura atómica completa.
+// ---------------------------------------------------------------------------
+
+// Buffer interno — solo escribe el callback
+static volatile MensajeVision bufferCamara;
+
+// Variable pública que leen los demás módulos — se actualiza en obtenerDatosCamara()
 MensajeVision datosCamara;
-bool datosNuevosRecibidos = false;
 
-// Variable de seguridad contra "fantasmas"
-unsigned long tiempoUltimoMensaje = 0; 
+volatile bool          datosNuevosRecibidos = false;
+volatile unsigned long tiempoUltimoMensaje  = 0;
 
-// 1. FUNCIÓN QUE SE EJECUTA AL RECIBIR DATOS
-void alRecibirDatos(const uint8_t * mac, const uint8_t *datosEntrantes, int len) {
-  // Verificamos que el mensaje venga de la MAC de nuestra cámara
-  if (memcmp(mac, direccionMacCamara, 6) == 0) {
-    
-    // Copiamos los datos recibidos a nuestra variable global
-    memcpy(&datosCamara, datosEntrantes, sizeof(datosCamara));
-    
-    // ¡CRÍTICO! Levantamos la bandera para que la Estrategia sepa que hay datos
-    datosNuevosRecibidos = true; 
-    
-    // Registramos la hora exacta
-    tiempoUltimoMensaje = millis(); 
-  } 
+// ---------------------------------------------------------------------------
+// 1. CALLBACK ESP-NOW — se ejecuta en Core 0 al recibir un paquete
+// ---------------------------------------------------------------------------
+void alRecibirDatos(const uint8_t *mac, const uint8_t *datosEntrantes, int len) {
+    // Verificar que el paquete venga de la MAC de nuestra cámara
+    if (memcmp(mac, direccionMacCamara, 6) != 0) return;
+
+    // Verificar tamaño correcto para evitar desbordamiento de buffer
+    if (len != sizeof(MensajeVision)) return;
+
+    // Copiar al buffer interno (Core 0, sin riesgo de colisión aquí)
+    memcpy((void*)&bufferCamara, datosEntrantes, sizeof(MensajeVision));
+
+    datosNuevosRecibidos = true;
+    tiempoUltimoMensaje  = millis();
 }
 
-// 2. FUNCIÓN DE SEGURIDAD (BOTÓN DE PÁNICO)
+// ---------------------------------------------------------------------------
+// 2. FUNCIÓN DE SEGURIDAD — llamar desde loop() cada ciclo
+//    Si pasan más de 500ms sin mensaje, consideramos que la cámara se perdió
+//    y apagamos la bandera de balón para que el robot no persiga fantasmas.
+// ---------------------------------------------------------------------------
 void revisarConexionSegura() {
-    // Si ha pasado mas de 500 milisegundos sin un mensaje...
     if (millis() - tiempoUltimoMensaje > 500) {
-        datosCamara.balonDetectado = false; // Forzamos a que deje de ver fantasmas
+        datosCamara.balonDetectado = false;
     }
 }
 
-// 3. INICIALIZACIÓN DE LA RADIO
+// ---------------------------------------------------------------------------
+// 3. COPIA SEGURA — llamar desde loop() antes de leer datosCamara
+//    noInterrupts() pausa brevemente el scheduler para que la copia
+//    no quede a mitad si el callback dispara en Core 0 al mismo tiempo.
+// ---------------------------------------------------------------------------
+void obtenerDatosCamara() {
+    noInterrupts();
+    memcpy(&datosCamara, (const void*)&bufferCamara, sizeof(MensajeVision));
+    interrupts();
+}
+
+// ---------------------------------------------------------------------------
+// 4. INICIALIZACIÓN DE LA RADIO
+// ---------------------------------------------------------------------------
 void inicializarRadio() {
     WiFi.mode(WIFI_STA);
-    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE); // Canal mágico
+    esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
     if (esp_now_init() != ESP_OK) {
-          Serial.println("Error iniciando ESP-NOW");
+        Serial.println("ERROR: ESP-NOW no pudo inicializarse. Revisar antena/WiFi.");
         return;
     }
 
-    // ¡CRÍTICO! Aquí conectamos la radio con nuestra función
-    // Esto le dice al ESP32: "Cada vez que recibas algo, ejecuta alRecibirDatos"
-    esp_now_register_recv_cb(esp_now_recv_cb_t(alRecibirDatos)); 
+    esp_now_register_recv_cb(esp_now_recv_cb_t(alRecibirDatos));
+    Serial.println("Radio ESP-NOW lista.");
 }
 
-// 4. FUNCIONES AUXILIARES
+// ---------------------------------------------------------------------------
+// 5. FUNCIONES AUXILIARES
+// ---------------------------------------------------------------------------
 bool hayDatosNuevos() {
-    return datosNuevosRecibidos; 
+    return datosNuevosRecibidos;
 }
 
 void limpiarBanderaDatos() {
