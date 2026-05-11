@@ -1,32 +1,96 @@
-// Script para hacer test de los motores
-#include <Arduino.h>
 
-// Pines del BTS7960
-const int M1_R_EN = 12; const int M1_L_EN = 13;
-const int M1_R_PWM = 14; const int M1_L_PWM = 27;
-const int M2_R_EN = 25; const int M2_L_EN = 26;
-const int M2_R_PWM = 15; const int M2_L_PWM = 23;
+// Codigo principal de nuestro proyecto, para una visualizacion 
+//sobre el flujo del robot --> docs/Diagrama_Flujo_Robot.pdf 
+
+#include <Arduino.h>
+#include "Motores.h"
+#include "Sensores.h"
+#include "Odometria.h"
+#include "ControlPID.h"
+#include "Comunicacion.h"
+#include "Estrategia.h"
+
+extern EstadoRobot estadoActual;
+extern MensajeVision datosCamara;
+
+// --- FUNCION DE TELEMETRIA (Monitoreo sin bloquear el procesador) ---
+void imprimirTelemetria() {
+    // 4. Monitoreo de Sensores Crudos (Modo Debug)
+    static unsigned long ultimoPrintSensores = 0;
+    
+    // Imprime el reporte solo cada 500 milisegundos (2 veces por segundo)
+    if (millis() - ultimoPrintSensores > 500) { 
+        Serial.println("--- REPORTE DE SENSORES ---");
+        
+        // 1. Suelo (QTR-8A)
+        Serial.print("🚥 SUELO: Línea Blanca = ");
+        Serial.println(detectarLineaBlanca() ? "¡PELIGRO (SI)!" : "Seguro (NO)");
+
+        // 2. Láser Frontal (VL53L0X)
+        Serial.print("📏 LÁSER: Rival Cerca = ");
+        Serial.println(detectarOponenteFrente() ? "¡OBSTÁCULO (SI)!" : "Despejado (NO)");
+
+        // 3. Radio / Cámara (ESP-NOW)
+        if (hayDatosNuevos()) {
+            Serial.print("📸 CÁMARA: Pelota="); 
+            Serial.print(datosCamara.balonDetectado ? "VISTA" : "PERDIDA");
+            Serial.print(" | X="); 
+            Serial.print(datosCamara.coordX);
+            Serial.print(" | Distancia="); 
+            Serial.println(datosCamara.distanciaEstimada);
+            
+            limpiarBanderaDatos(); // Resetea la bandera de nuevo mensaje
+        } else {
+            Serial.println("📸 CÁMARA: Esperando conexión/datos...");
+        }
+        
+        Serial.println("---------------------------");
+        ultimoPrintSensores = millis(); // Reinicia el temporizador
+    }
+}
 
 void setup() {
     Serial.begin(115200);
-    pinMode(M1_R_EN, OUTPUT); pinMode(M1_L_EN, OUTPUT);
-    pinMode(M1_R_PWM, OUTPUT); pinMode(M1_L_PWM, OUTPUT);
-    pinMode(M2_R_EN, OUTPUT); pinMode(M2_L_EN, OUTPUT);
-    pinMode(M2_R_PWM, OUTPUT); pinMode(M2_L_PWM, OUTPUT);
-
-// Habilitar drivers
-    digitalWrite(M1_R_EN, HIGH); digitalWrite(M1_L_EN, HIGH);
-    digitalWrite(M2_R_EN, HIGH); digitalWrite(M2_L_EN, HIGH);
+    
+    // 1. Inicializar hardware físico
+    inicializarMotores(); 
+    inicializarBusI2C(); 
+    inicializarIMU_BNO055(); 
+    inicializarToF_VL53L0X(); 
+    inicializarLinea_QTR8A(); 
+    
+    // 2. Inicializar Inteligencia y Red
+    inicializarOdometria();  
+    inicializarPID();        
+    inicializarRadio(); // Enciende ESP-NOW
+    inicializarEstrategia(); // ¡Estrategia encendida!
+    
+    Serial.println("Robot Futbot Listo! Iniciando escaneo del entorno...");
 }
 
 void loop() {
-    Serial.println("Motores ADELANTE a 40% de potencia");
-    analogWrite(M1_R_PWM, 100); analogWrite(M1_L_PWM, 0); // Izquierdo
-    analogWrite(M2_R_PWM, 100); analogWrite(M2_L_PWM, 0); // Derecho
-    delay(3000);
+    // 3. Ciclo de pensamiento y movimiento
+    actualizarPosicion();
+    evaluarEntorno();      
+    ejecutarJugadaActual();
+    
+    revisarConexionSegura(); 
+    
+    // 4. (Opcional) Leer datos crudos de la cámara si hay un error de posición
+    if (hayDatosNuevos()) {
+        // Descomenta esto solo si necesitas ver las coordenadas exactas de los píxeles
+        Serial.print("📡 CEREBRO ESCUCHA: Pelota = ");
+        Serial.print(datosCamara.balonDetectado);
+        Serial.print(" | Coord X = ");
+        Serial.print(datosCamara.coordX);
+        Serial.print(" | Coord Y = ");
+        Serial.println(datosCamara.coordY);
 
-    Serial.println("Motores DETENIDOS");
-    analogWrite(M1_R_PWM, 0); analogWrite(M1_L_PWM, 0);
-    analogWrite(M2_R_PWM, 0); analogWrite(M2_L_PWM, 0);
-    delay(2000);
+        // limpiarBanderaDatos(); // Reset the flag
+    }
+    
+    // 5. Monitoreo general en pantalla de la máquina de estados
+    imprimirTelemetria();
+    
+    delay(10); // Pausa de 10ms para estabilidad del ciclo
 }
