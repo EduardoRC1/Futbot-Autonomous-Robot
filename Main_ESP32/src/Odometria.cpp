@@ -10,7 +10,7 @@ const float PULSOS_POR_VUELTA = 330.0;
 
 const float DISTANCIA_POR_PULSO = (PI * DIAMETRO_LLANTA_CM) / PULSOS_POR_VUELTA; // Distancia que recorre el robot por cada pulso del encoder
 
-const int ENCODER_IZQ_A = 16; // (Antes era 2)
+const int ENCODER_IZQ_A = 35; // (Antes era 2)
 const int ENCODER_DER_A = 4; // Igaul hay que revisar si este pin es correcto para el encoder del motor derecho
 
 volatile long pulsosIzquierdos = 0; // volatile porque se modificara dentro de una interrupcion
