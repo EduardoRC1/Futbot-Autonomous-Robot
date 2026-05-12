@@ -15,7 +15,7 @@ void inicializarBusI2C();
 void inicializarIMU_BNO055();
 void inicializarToF_VL53L0X();
 void inicializarLinea_QTR8A();
-
+void obtenerLecturasDetalladas();
 // Funciones de lectura que tomarán las decisiones en la cancha
 float leerRumboBrujula();         // Devuelve el ángulo actual del robot (0 a 360 grados)
 bool detectarOponenteFrente();    // Devuelve true si un oponente está a menos de 20cm

@@ -1,68 +1,26 @@
 #include <Arduino.h>
-#include <Wire.h>
-#include <SPI.h>
-
-// Tus cabeceras de proyecto
-#include "Motores.h"
 #include "Sensores.h"
-#include "Comunicacion.h"
-#include "Odometria.h"
-#include "Estrategia.h"
-
-extern MensajeVision datosCamara;
 
 void setup() {
+    // La velocidad debe ser 115200 para que coincida con PlatformIO
     Serial.begin(115200);
-    delay(1500); 
-    Serial.println("\n==========================================");
-    Serial.println(">>> MODO DIAGNOSTICO: SENSORES I2C <<<");
-    Serial.println("==========================================\n");
+    delay(2000); 
+    
+    Serial.println("\n--- REINICIO DE SISTEMA: BYPASS PINES 16/17 ---");
 
-    // --- MOTORES TOTALMENTE APAGADOS ---
-    // No llamamos a inicializarMotores() para asegurar silencio eléctrico.
-
-    // 1. Bus I2C (Pines 21 y 22)
-    Serial.println("[1/3] Iniciando Bus I2C...");
+    // 1. Arrancamos el bus en los pines nuevos
     inicializarBusI2C();
-
-    // 2. ToF (Usa los XSHUT 5, 32, 15)
-    Serial.println("[2/3] Configurando direcciones ToF...");
+    
+    // 2. Encendemos y damos dirección a los ToF uno por uno
     inicializarToF_VL53L0X();
-
-    // 3. IMU (BNO055)
-    Serial.println("[3/3] Iniciando IMU BNO055...");
-    inicializarIMU_BNO055();
-
-    // Extras
-    inicializarLinea_QTR8A();
-    inicializarRadio();
-
-    Serial.println("\n>>> SISTEMA LISTO - PASA TU MANO POR LOS SENSORES <<<");
+    
+    Serial.println("Sistema listo. Esperando detección...");
 }
 
 void loop() {
-    Serial.print("TEST: ");
-
-    // Verificamos oponente (Bus I2C activo)
-    if (detectarOponenteFrente()) {
-        Serial.print("[ OBJETO! ] ");
-    } else {
-        Serial.print("[ Despejado ] ");
-    }
-
-    // Verificamos línea (Pin analógico)
-    if (detectarLineaBlanca()) {
-        Serial.print("| LINEA BLANCA |");
-    }
-
-    // Datos de la cámara ESP-NOW
-    obtenerDatosCamara();
-    if (hayDatosNuevos()) {
-        Serial.print(" CamX: ");
-        Serial.print(datosCamara.coordX);
-        limpiarBanderaDatos();
-    }
-
-    Serial.println(""); 
-    delay(200); 
+    // Leemos las distancias y las mandamos al monitor
+    obtenerLecturasDetalladas();
+    
+    // Un delay pequeño para no saturar la terminal
+    delay(100); 
 }

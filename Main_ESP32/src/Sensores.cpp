@@ -1,73 +1,88 @@
 #include <Arduino.h>
-#include <SPI.h> // Agregamos esto para evitar el error de compilación
 #include <Wire.h>
-#include "Motores.h"
+#include <Adafruit_VL53L0X.h>
 #include "Sensores.h"
-#include "Comunicacion.h"
-#include "Odometria.h"
-#include "Estrategia.h"
 
-extern MensajeVision datosCamara;
+// 1. DEFINICIÓN DE PINES (Esto conecta con el extern del .h)
+const int TOF_FRONT_XSHUT = 5;
+const int TOF_LEFT_XSHUT  = 32;
+const int TOF_RIGHT_XSHUT = 15;
 
-void setup() {
-    Serial.begin(115200);
-    delay(1500); 
-    Serial.println("\n==========================================");
-    Serial.println(">>> MODO DIAGNOSTICO: SENSORES I2C <<<");
-    Serial.println("==========================================\n");
+// Instancias de los sensores
+Adafruit_VL53L0X sensorFrente = Adafruit_VL53L0X();
+Adafruit_VL53L0X sensorIzq    = Adafruit_VL53L0X();
+Adafruit_VL53L0X sensorDer    = Adafruit_VL53L0X();
 
-    // --- SEGURIDAD: MOTORES DESACTIVADOS ---
-    // Al comentar esto, el ESP32 no manda señal a los drivers.
-    // inicializarMotores(); 
-    // detenerRobot(); 
-
-    // 1. Bus I2C
-    Serial.println("[1/3] Iniciando Bus I2C...");
-    inicializarBusI2C();
-
-    // 2. ToF - Aquí se prueba el puenteo y los XSHUT (5, 32, 15)
-    Serial.println("[2/3] Configurando direcciones ToF...");
-    inicializarToF_VL53L0X();
-
-    // 3. IMU
-    Serial.println("[3/3] Iniciando IMU BNO055...");
-    inicializarIMU_BNO055();
-
-    // Sensores extra
-    inicializarLinea_QTR8A();
-    inicializarRadio();
-
-    // COMENTADOS PARA EVITAR CRASHES POR MEMORIA O I2C
-    // inicializarOdometria();
-    // inicializarEstrategia();
-
-    Serial.println("\n>>> TEST ACTIVADO: Pasa la mano frente a los sensores <<<");
-}
-
-void loop() {
-    // Lectura simplificada para monitor serie
-    Serial.print("ESTADO: ");
-
-    // Probamos si los ToF ven algo (esto usa el bus I2C)
-    if (detectarOponenteFrente()) {
-        Serial.print("| OBJETO DETECTADO | ");
+void inicializarBusI2C() {
+    Serial.println("Iniciando BUS I2C en PINES NUEVOS (16 y 17)...");
+    // Forzamos el bus a los pines 16 (SDA) y 17 (SCL)
+    bool ok = Wire.begin(16, 17, 100000); 
+    
+    if (!ok) {
+        Serial.println("ERROR: No se pudo iniciar el bus en pines 16/17");
     } else {
-        Serial.print("| Despejado | ");
+        Serial.println("Bus I2C iniciado correctamente.");
     }
-
-    // Probamos el sensor de línea (Analógico)
-    if (detectarLineaBlanca()) {
-        Serial.print(" [LINEA BLANCA] ");
-    }
-
-    // Probamos si llega señal de la cámara
-    obtenerDatosCamara();
-    if (hayDatosNuevos()) {
-        Serial.print(" CamX: ");
-        Serial.print(datosCamara.coordX);
-        limpiarBanderaDatos();
-    }
-
-    Serial.println(""); 
-    delay(300); 
 }
+
+void inicializarToF_VL53L0X() {
+    // Usamos las constantes que definimos arriba
+    pinMode(TOF_FRONT_XSHUT, OUTPUT); digitalWrite(TOF_FRONT_XSHUT, LOW);
+    pinMode(TOF_LEFT_XSHUT, OUTPUT);  digitalWrite(TOF_LEFT_XSHUT, LOW);
+    pinMode(TOF_RIGHT_XSHUT, OUTPUT); digitalWrite(TOF_RIGHT_XSHUT, LOW);
+    delay(20);
+
+    // Encender y direccionar Frente
+    digitalWrite(TOF_FRONT_XSHUT, HIGH);
+    delay(20);
+    sensorFrente.begin(0x30);
+
+    // Encender y direccionar Izquierda
+    digitalWrite(TOF_LEFT_XSHUT, HIGH);
+    delay(20);
+    sensorIzq.begin(0x31);
+
+    // Encender y direccionar Derecha
+    digitalWrite(TOF_RIGHT_XSHUT, HIGH);
+    delay(20);
+    sensorDer.begin(0x32);
+    
+    Serial.println("Sensores ToF direccionados.");
+}
+
+void obtenerLecturasDetalladas() {
+    VL53L0X_RangingMeasurementData_t medida;
+    
+    Serial.print("Distancias -> ");
+    
+    // Lectura Frente
+    sensorFrente.rangingTest(&medida, false);
+    Serial.print("F: "); 
+    if(medida.RangeStatus != 4) Serial.print(medida.RangeMilliMeter);
+    else Serial.print("Out");
+    
+    Serial.print("mm | ");
+
+    // Lectura Izquierda
+    sensorIzq.rangingTest(&medida, false);
+    Serial.print("I: "); 
+    if(medida.RangeStatus != 4) Serial.print(medida.RangeMilliMeter);
+    else Serial.print("Out");
+    
+    Serial.print("mm | ");
+
+    // Lectura Derecha (FALTABA ESTA PARTE)
+    sensorDer.rangingTest(&medida, false);
+    Serial.print("D: "); 
+    if(medida.RangeStatus != 4) Serial.print(medida.RangeMilliMeter);
+    else Serial.print("Out");
+
+    Serial.println("mm");
+}
+
+// 2. FUNCIONES "DUMMY" (Para que el compilador no marque error al buscar lo que declaraste en el .h)
+void inicializarIMU_BNO055() { Serial.println("IMU: Pendiente de configurar."); }
+void inicializarLinea_QTR8A() { Serial.println("QTR: Pendiente de configurar."); }
+float leerRumboBrujula() { return 0.0; }
+bool detectarOponenteFrente() { return false; }
+bool detectarLineaBlanca() { return false; }
