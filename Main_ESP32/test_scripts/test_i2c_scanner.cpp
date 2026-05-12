@@ -1,12 +1,17 @@
-// I2C Scanner
-// Este programa escanea el bus I2C para encontrar dispositivos conectados
+// I2C Scanner — usa los pines definidos en Config.h (SDA=16, SCL=17)
 #include <Arduino.h>
 #include <Wire.h>
 
+// Pines I2C del robot (deben coincidir con Config.h)
+static const int PIN_SDA = 16;
+static const int PIN_SCL = 17;
+
 void setup() {
     Serial.begin(115200);
-    Wire.begin();
-    Serial.println("I2C Scanner Iniciando");
+    delay(2000);
+    Wire.begin(PIN_SDA, PIN_SCL, 100000);
+    Wire.setTimeOut(100);
+    Serial.printf("I2C Scanner — SDA=%d SCL=%d\n", PIN_SDA, PIN_SCL);
 }
 
 // Escanea el I2C para encontrar dispositivos conectados y muestra sus direcciones en el monitor serial

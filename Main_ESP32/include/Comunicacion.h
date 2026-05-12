@@ -1,22 +1,19 @@
-// Comunicacion.h
-// Universidad de Matamoros — Futbot Autonomous Robot
-// Revisado: obtenerDatosCamara() agregada — debe llamarse antes de leer
-//           datosCamara para garantizar una copia segura entre cores.
-
 #ifndef COMUNICACION_H
 #define COMUNICACION_H
+
+// ============================================================================
+//  Comunicacion.h — Radio ESP-NOW (recepción de datos de cámara)
+// ============================================================================
 
 #include <Arduino.h>
 #include "ProtocoloEspNow.h"
 
-// ---------------------------------------------------------------------------
-// datosCamara — variable pública con los últimos datos de la cámara.
-// IMPORTANTE: Siempre llamar obtenerDatosCamara() antes de leerla en loop().
-// ---------------------------------------------------------------------------
+// Últimos datos recibidos de la cámara.
+// Llamar obtenerDatosCamara() antes de leer para garantizar copia segura.
 extern MensajeVision datosCamara;
 
 void inicializarRadio();
-void obtenerDatosCamara();   // Copia segura del buffer interno → datosCamara
+void obtenerDatosCamara();
 bool hayDatosNuevos();
 void limpiarBanderaDatos();
 void revisarConexionSegura();
