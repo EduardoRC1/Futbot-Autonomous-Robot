@@ -15,15 +15,26 @@ static long pulsosDerAnt = 0;
 static float posicionX = POS_INICIAL_X;
 static float posicionY = POS_INICIAL_Y;
 
-static void IRAM_ATTR contarPulsoIzq() { pulsosIzquierdos++; }
-static void IRAM_ATTR contarPulsoDer() { pulsosDerechos++; }
+// Canal B determina dirección: si B es HIGH cuando A sube → avance, si LOW → reversa
+static void IRAM_ATTR contarPulsoIzq() {
+    if (digitalRead(PIN_ENCODER_IZQ_B)) pulsosIzquierdos++;
+    else pulsosIzquierdos--;
+}
+static void IRAM_ATTR contarPulsoDer() {
+    if (digitalRead(PIN_ENCODER_DER_B)) pulsosDerechos++;
+    else pulsosDerechos--;
+}
 
 void inicializarOdometria() {
     pinMode(PIN_ENCODER_IZQ_A, INPUT_PULLUP);
+    pinMode(PIN_ENCODER_IZQ_B, INPUT_PULLUP);
     pinMode(PIN_ENCODER_DER_A, INPUT_PULLUP);
+    pinMode(PIN_ENCODER_DER_B, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_IZQ_A), contarPulsoIzq, RISING);
     attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_DER_A), contarPulsoDer, RISING);
-    Serial.println("[Odometria] Inicializada");
+    Serial.printf("[Odometria] Inicializada (IZQ: A=%d B=%d, DER: A=%d B=%d)\n",
+                  PIN_ENCODER_IZQ_A, PIN_ENCODER_IZQ_B,
+                  PIN_ENCODER_DER_A, PIN_ENCODER_DER_B);
 }
 
 void actualizarPosicion() {

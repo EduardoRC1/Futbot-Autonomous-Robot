@@ -50,10 +50,12 @@ static const int    PWM_CH_M2_R    = 2;
 static const int    PWM_CH_M2_L    = 3;
 
 // ---------------------------------------------------------------------------
-// Encoders (odometría)
+// Encoders (odometría) — según esquemático
 // ---------------------------------------------------------------------------
-static const int PIN_ENCODER_IZQ_A = 35;
-static const int PIN_ENCODER_DER_A = 4;
+static const int PIN_ENCODER_IZQ_A = 4;   // Motor izquierdo canal A (interrupción)
+static const int PIN_ENCODER_IZQ_B = 18;  // Motor izquierdo canal B (dirección)
+static const int PIN_ENCODER_DER_A = 19;  // Motor derecho canal A (interrupción)
+static const int PIN_ENCODER_DER_B = 23;  // Motor derecho canal B (dirección)
 
 // Parámetros de rueda — ajustar según hardware real
 static const float DIAMETRO_LLANTA_CM = 6.5f;
