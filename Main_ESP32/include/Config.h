@@ -82,6 +82,19 @@ static const float PID_KD_DEFAULT = 0.5f;
 static const float PID_LIMITE_INTEGRAL = 500.0f;
 
 // ---------------------------------------------------------------------------
+// BNO055 IMU
+// ---------------------------------------------------------------------------
+static const uint8_t BNO055_DIRECCION_I2C = 0x29;  // ADR sin conectar = 0x29
+
+// ---------------------------------------------------------------------------
+// QTR-8A — sensor de línea (2 canales analógicos)
+// ---------------------------------------------------------------------------
+static const uint8_t PIN_QTR_1 = 36;  // VP
+static const uint8_t PIN_QTR_2 = 39;  // VN
+static const uint8_t QTR_NUM_CANALES = 2;
+static const uint16_t QTR_UMBRAL_LINEA = 500;  // Valor 0-4095, ajustar en cancha
+
+// ---------------------------------------------------------------------------
 // Comunicación — timeout de la cámara (ms)
 // ---------------------------------------------------------------------------
 static const unsigned long TIMEOUT_CAMARA_MS = 500;
