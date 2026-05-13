@@ -1,18 +1,29 @@
 #include "SensorLinea.h"
 #include "Config.h"
+#include <QTRSensors.h>
 
-// TODO: Integrar QTRSensors cuando el hardware esté conectado.
-// Incluir <QTRSensors.h> y configurar los pines analógicos aquí.
-
+static QTRSensors qtr;
+static uint16_t valoresSensor[QTR_NUM_CANALES];
+static const uint8_t pinesQTR[QTR_NUM_CANALES] = { PIN_QTR_1, PIN_QTR_2 };
 static bool lineaActiva = false;
 
 void inicializarSensorLinea() {
-    Serial.println("[Linea] QTR-8A pendiente de integración");
-    lineaActiva = false;
+    Serial.println("[Linea] Iniciando QTR-8A...");
+    qtr.setTypeAnalog();
+    qtr.setSensorPins(pinesQTR, QTR_NUM_CANALES);
+    lineaActiva = true;
+    Serial.printf("[Linea] QTR OK (%d canales en VP=%d, VN=%d)\n",
+                  QTR_NUM_CANALES, PIN_QTR_1, PIN_QTR_2);
 }
 
 bool detectarLineaBlanca() {
     if (!lineaActiva) return false;
-    // Leer valores del arreglo QTR y comparar con umbral
+
+    qtr.read(valoresSensor);
+    for (uint8_t i = 0; i < QTR_NUM_CANALES; i++) {
+        if (valoresSensor[i] > QTR_UMBRAL_LINEA) {
+            return true;
+        }
+    }
     return false;
 }
