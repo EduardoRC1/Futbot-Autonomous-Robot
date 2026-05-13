@@ -14,4 +14,7 @@ void inicializarSensorLinea();
 // Devuelve true si se detecta la línea blanca del borde de la cancha.
 bool detectarLineaBlanca();
 
+// Devuelve el valor crudo del canal QTR (0-4095) para calibración.
+uint16_t obtenerValorQTR(uint8_t canal);
+
 #endif // SENSOR_LINEA_H

@@ -12,8 +12,13 @@ void inicializarSensorLinea() {
     qtr.setTypeAnalog();
     qtr.setSensorPins(pinesQTR, QTR_NUM_CANALES);
     lineaActiva = true;
-    Serial.printf("[Linea] QTR OK (%d canales en VP=%d, VN=%d)\n",
-                  QTR_NUM_CANALES, PIN_QTR_1, PIN_QTR_2);
+    Serial.printf("[Linea] QTR OK (%d canales en VP=%d, VN=%d, umbral=%d)\n",
+                  QTR_NUM_CANALES, PIN_QTR_1, PIN_QTR_2, QTR_UMBRAL_LINEA);
+}
+
+uint16_t obtenerValorQTR(uint8_t canal) {
+    if (!lineaActiva || canal >= QTR_NUM_CANALES) return 0;
+    return valoresSensor[canal];
 }
 
 bool detectarLineaBlanca() {
