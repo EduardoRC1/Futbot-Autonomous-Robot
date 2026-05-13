@@ -5,8 +5,8 @@
 // =========================================================================
 // 1. EL INTERRUPTOR DE ROBOTS (Cambia esto antes de subir el codigo)
 // =========================================================================
-#define ROBOT_A  // <- Deja esto asi para programar la Camara del Robot A
-//#define ROBOT_B // <- Quita las barras (//) para programar la Camara del Robot B
+//#define ROBOT_A // <- Quita las barras (//) para programar la Camara del Robot A
+#define ROBOT_B   // <- Deja esto asi para programar la Camara del Robot B
 
 // =========================================================================
 // 2. LA ESTRUCTURA DE DATOS (Universal para ambos robots)
