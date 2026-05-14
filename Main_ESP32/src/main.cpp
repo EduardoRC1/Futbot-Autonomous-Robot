@@ -113,9 +113,11 @@ void loop() {
         ultimoLog = millis();
         float rumbo = leerRumboBrujula();
         bool linea = detectarLineaBlanca();
-        Serial.printf("[DIAG] Brujula=%.1f | Linea=%s | Balon=%s",
+        uint16_t qtr0 = obtenerValorQTR(0);
+        uint16_t qtr1 = obtenerValorQTR(1);
+        Serial.printf("[DIAG] Brujula=%.1f | Linea=%s (Q0=%d Q1=%d) | Balon=%s",
                       rumbo,
-                      linea ? "SI" : "no",
+                      linea ? "SI" : "no", qtr0, qtr1,
                       datosCamara.balonDetectado ? "SI" : "no");
         if (datosCamara.balonDetectado) {
             Serial.printf(" (x=%d y=%d dist=%.1f)",
