@@ -57,13 +57,10 @@ void setup() {
     Serial.println();
 
     // --- Paso 3: IMU ---
-    bool imuOK = inicializarIMU();
-    if (!imuOK) {
-        Serial.println("AVISO: BNO055 no respondio - brujula desactivada");
-    }
+    inicializarIMU();
     Serial.println();
 
-    // --- Paso 4: Sensor de linea ---
+    // --- Paso 4: Sensor de línea ---
     inicializarSensorLinea();
     Serial.println();
 
@@ -95,42 +92,23 @@ void setup() {
 }
 
 void loop() {
-    static unsigned long ultimoLog = 0;
-
-    // 1. Leer sensores ToF
+    // 1. Leer sensores ToF y mostrar para diagnóstico
     LecturasToF lecturas = leerSensoresToF();
     imprimirLecturasToF(lecturas);
 
-    // 2. Actualizar posicion con encoders
+    // 2. Actualizar posición con encoders
     actualizarPosicion();
 
-    // 3. Recibir datos de la camara ESP-NOW
+    // 3. Recibir datos de la cámara ESP-NOW
     obtenerDatosCamara();
     revisarConexionSegura();
 
-    // 4. Log de diagnostico cada 2 segundos
-    if (millis() - ultimoLog > 2000) {
-        ultimoLog = millis();
-        float rumbo = leerRumboBrujula();
-        bool linea = detectarLineaBlanca();
-        Serial.printf("[DIAG] Brujula=%.1f | Linea=%s | Balon=%s",
-                      rumbo,
-                      linea ? "SI" : "no",
-                      datosCamara.balonDetectado ? "SI" : "no");
-        if (datosCamara.balonDetectado) {
-            Serial.printf(" (x=%d y=%d dist=%.1f)",
-                          datosCamara.coordX, datosCamara.coordY,
-                          datosCamara.distanciaEstimada);
-        }
-        Serial.println();
-    }
-
-    // 5. Decidir que hacer
+    // 4. Decidir qué hacer
     evaluarEntorno();
 
-    // 6. Ejecutar la accion decidida
+    // 5. Ejecutar la acción decidida
     ejecutarJugadaActual();
 
-    // 7. Pausa para no saturar el bus / serial
+    // 6. Pequeña pausa para no saturar el bus / serial
     delay(50);
 }
