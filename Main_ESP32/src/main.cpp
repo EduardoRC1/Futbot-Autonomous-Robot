@@ -103,30 +103,7 @@ void loop() {
     obtenerDatosCamara();
     revisarConexionSegura();
 
-<<<<<<< HEAD
     // 4. Decidir qué hacer
-=======
-    // 4. Log de diagnostico cada 2 segundos
-    if (millis() - ultimoLog > 2000) {
-        ultimoLog = millis();
-        float rumbo = leerRumboBrujula();
-        bool linea = detectarLineaBlanca();
-        uint16_t qtr0 = obtenerValorQTR(0);
-        uint16_t qtr1 = obtenerValorQTR(1);
-        Serial.printf("[DIAG] Brujula=%.1f | Linea=%s (Q0=%d Q1=%d) | Balon=%s",
-                      rumbo,
-                      linea ? "SI" : "no", qtr0, qtr1,
-                      datosCamara.balonDetectado ? "SI" : "no");
-        if (datosCamara.balonDetectado) {
-            Serial.printf(" (x=%d y=%d dist=%.1f)",
-                          datosCamara.coordX, datosCamara.coordY,
-                          datosCamara.distanciaEstimada);
-        }
-        Serial.println();
-    }
-
-    // 5. Decidir que hacer
->>>>>>> 4437bd1a0b0d0af5cf71111c445c39ef0e049ba9
     evaluarEntorno();
 
     // 5. Ejecutar la acción decidida
