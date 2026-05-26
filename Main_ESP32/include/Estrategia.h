@@ -19,5 +19,7 @@ enum EstadoRobot {
 void inicializarEstrategia();
 void evaluarEntorno();
 void ejecutarJugadaActual();
+EstadoRobot obtenerEstadoActual();
+const char* nombreEstado(EstadoRobot estado);
 
 #endif // ESTRATEGIA_H
