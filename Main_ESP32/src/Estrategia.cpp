@@ -23,6 +23,20 @@ void inicializarEstrategia() {
     tiempoInicioEvasion = 0;
 }
 
+EstadoRobot obtenerEstadoActual() { return estadoActual; }
+
+const char* nombreEstado(EstadoRobot estado) {
+    switch (estado) {
+        case ESPERANDO_EN_ZONA:  return "ESPERANDO";
+        case INTERCEPTANDO:      return "INTERCEPTANDO";
+        case DESPEJANDO:         return "DESPEJANDO";
+        case REGRESANDO_A_BASE:  return "REGRESANDO";
+        case EVADIENDO_LINEA:    return "EVAD_LINEA";
+        case EVADIENDO_RIVAL:    return "EVAD_RIVAL";
+        default:                 return "???";
+    }
+}
+
 void evaluarEntorno() {
     float xRobot = obtenerCoordenadaX();
     float yRobot = obtenerCoordenadaY();

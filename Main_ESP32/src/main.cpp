@@ -91,10 +91,11 @@ void setup() {
     Serial.println();
 }
 
+static unsigned long ultimoDiag = 0;
+
 void loop() {
-    // 1. Leer sensores ToF y mostrar para diagnóstico
+    // 1. Leer sensores ToF
     LecturasToF lecturas = leerSensoresToF();
-    imprimirLecturasToF(lecturas);
 
     // 2. Actualizar posición con encoders
     actualizarPosicion();
@@ -109,6 +110,24 @@ void loop() {
     // 5. Ejecutar la acción decidida
     ejecutarJugadaActual();
 
-    // 6. Pequeña pausa para no saturar el bus / serial
+    // 6. Diagnóstico cada 500ms
+    unsigned long ahora = millis();
+    if (ahora - ultimoDiag >= 500) {
+        ultimoDiag = ahora;
+
+        imprimirLecturasToF(lecturas);
+
+        bool oponente = detectarOponenteFrente();
+        bool linea    = detectarLineaBlanca();
+
+        Serial.printf("[DIAG] Estado=%s | Oponente=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
+                      nombreEstado(obtenerEstadoActual()),
+                      oponente ? "SI" : "no",
+                      linea ? "SI" : "no",
+                      obtenerValorQTR(0), obtenerValorQTR(1),
+                      datosCamara.balonDetectado ? "SI" : "no");
+    }
+
+    // 7. Pequeña pausa para no saturar el bus
     delay(50);
 }
