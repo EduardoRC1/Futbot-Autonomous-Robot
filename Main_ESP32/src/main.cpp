@@ -117,12 +117,14 @@ void loop() {
 
         imprimirLecturasToF(lecturas);
 
-        bool oponente = detectarOponenteFrente();
-        bool linea    = detectarLineaBlanca();
+        bool opF = detectarOponenteFrente();
+        bool opI = detectarOponenteIzquierda();
+        bool opD = detectarOponenteDerecha();
+        bool linea = detectarLineaBlanca();
 
-        Serial.printf("[DIAG] Estado=%s | Oponente=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
+        Serial.printf("[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
                       nombreEstado(obtenerEstadoActual()),
-                      oponente ? "SI" : "no",
+                      opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
                       linea ? "SI" : "no",
                       obtenerValorQTR(0), obtenerValorQTR(1),
                       datosCamara.balonDetectado ? "SI" : "no");

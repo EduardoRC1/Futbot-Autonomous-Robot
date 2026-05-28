@@ -49,8 +49,8 @@ void evaluarEntorno() {
         return;
     }
 
-    // Prioridad 2: oponente al frente
-    if (detectarOponenteFrente()) {
+    // Prioridad 2: oponente detectado (frente, izquierda o derecha)
+    if (detectarOponenteFrente() || detectarOponenteIzquierda() || detectarOponenteDerecha()) {
         estadoActual = EVADIENDO_RIVAL;
         return;
     }
@@ -101,7 +101,14 @@ void ejecutarJugadaActual() {
 
     case EVADIENDO_RIVAL:
         evasionActiva = false;
-        pivotearIzquierda(150);
+        if (detectarOponenteIzquierda() && !detectarOponenteDerecha())
+            pivotearDerecha(150);
+        else if (detectarOponenteDerecha() && !detectarOponenteIzquierda())
+            pivotearIzquierda(150);
+        else if (detectarOponenteFrente())
+            pivotearIzquierda(150);
+        else
+            pivotearIzquierda(150);
         break;
 
     case INTERCEPTANDO: {

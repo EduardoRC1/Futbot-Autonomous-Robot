@@ -13,8 +13,10 @@ static bool frenteOK  = false;
 static bool izqOK     = false;
 static bool derOK     = false;
 
-// Última lectura válida del frente (para detectarOponenteFrente)
+// Últimas lecturas válidas (para detección de oponente)
 static uint16_t ultimaLecturaFrente = 9999;
+static uint16_t ultimaLecturaIzq    = 9999;
+static uint16_t ultimaLecturaDer    = 9999;
 
 // ---------------------------------------------------------------------------
 // Inicializa un solo sensor VL53L0X con reintentos
@@ -104,6 +106,7 @@ LecturasToF leerSensoresToF() {
         if (medida.RangeStatus != 4) {
             lecturas.izquierdaMM    = medida.RangeMilliMeter;
             lecturas.izquierdaValida = true;
+            ultimaLecturaIzq        = medida.RangeMilliMeter;
         }
     }
 
@@ -112,6 +115,7 @@ LecturasToF leerSensoresToF() {
         if (medida.RangeStatus != 4) {
             lecturas.derechaMM    = medida.RangeMilliMeter;
             lecturas.derechaValida = true;
+            ultimaLecturaDer      = medida.RangeMilliMeter;
         }
     }
 
@@ -135,5 +139,13 @@ void imprimirLecturasToF(const LecturasToF& l) {
 }
 
 bool detectarOponenteFrente() {
-    return (frenteOK && ultimaLecturaFrente < TOF_UMBRAL_OPONENTE_MM);
+    return (frenteOK && ultimaLecturaFrente < TOF_UMBRAL_OPONENTE_FRENTE_MM);
+}
+
+bool detectarOponenteIzquierda() {
+    return (izqOK && ultimaLecturaIzq < TOF_UMBRAL_OPONENTE_LATERAL_MM);
+}
+
+bool detectarOponenteDerecha() {
+    return (derOK && ultimaLecturaDer < TOF_UMBRAL_OPONENTE_LATERAL_MM);
 }
