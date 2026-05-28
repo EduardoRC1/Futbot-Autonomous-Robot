@@ -6,6 +6,7 @@
 
 static Adafruit_BNO055 bno(55, BNO055_DIRECCION_I2C, &Wire);
 static bool imuActiva = false;
+static float offsetBrujula = 0.0f;
 
 bool inicializarIMU() {
     Serial.println("[IMU] Iniciando BNO055...");
@@ -14,8 +15,15 @@ bool inicializarIMU() {
         if (bno.begin(OPERATION_MODE_NDOF)) {
             imuActiva = true;
             bno.setExtCrystalUse(true);
+            // Esperar a que el sensor se estabilice antes de leer el offset
+            delay(500);
+            sensors_event_t evento;
+            bno.getEvent(&evento, Adafruit_BNO055::VECTOR_EULER);
+            offsetBrujula = evento.orientation.x;
             Serial.printf("[IMU] BNO055 OK en 0x%02X (intento %d)\n",
                           BNO055_DIRECCION_I2C, intento);
+            Serial.printf("[IMU] Offset de brujula: %.1f° (esta direccion = 0°)\n",
+                          offsetBrujula);
             return true;
         }
         Serial.printf("[IMU] BNO055 intento %d fallido\n", intento);
@@ -32,5 +40,8 @@ float leerRumboBrujula() {
 
     sensors_event_t evento;
     bno.getEvent(&evento, Adafruit_BNO055::VECTOR_EULER);
-    return evento.orientation.x;
+    float relativo = evento.orientation.x - offsetBrujula;
+    if (relativo < 0.0f) relativo += 360.0f;
+    if (relativo >= 360.0f) relativo -= 360.0f;
+    return relativo;
 }
