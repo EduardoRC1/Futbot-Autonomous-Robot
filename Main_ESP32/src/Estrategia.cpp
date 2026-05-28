@@ -41,10 +41,9 @@ void evaluarEntorno() {
     float xRobot = obtenerCoordenadaX();
     float yRobot = obtenerCoordenadaY();
 
-    // Prioridad 1: línea blanca o geocerca
-    if (detectarLineaBlanca() ||
-        xRobot > LIMITE_X_MAX || xRobot < LIMITE_X_MIN ||
-        yRobot > LIMITE_Y_MAX || yRobot < LIMITE_Y_MIN) {
+    // Prioridad 1: línea blanca (solo QTR — geocerca deshabilitada
+    // porque los encoders generan pulsos falsos por ruido de motores)
+    if (detectarLineaBlanca()) {
         estadoActual = EVADIENDO_LINEA;
         return;
     }
