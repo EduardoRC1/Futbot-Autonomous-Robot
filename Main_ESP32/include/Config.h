@@ -31,8 +31,9 @@ static const uint8_t TOF_ADDR_FRONT = 0x30;
 static const uint8_t TOF_ADDR_LEFT  = 0x31;
 static const uint8_t TOF_ADDR_RIGHT = 0x32;
 
-// Umbral para considerar que un objeto está "cerca" (mm)
-static const uint16_t TOF_UMBRAL_OPONENTE_MM = 200;
+// Umbrales para considerar que un objeto está "cerca" (mm)
+static const uint16_t TOF_UMBRAL_OPONENTE_FRENTE_MM = 50;
+static const uint16_t TOF_UMBRAL_OPONENTE_LATERAL_MM = 50;
 
 // ---------------------------------------------------------------------------
 // Motores (BTS7960) — canales PWM

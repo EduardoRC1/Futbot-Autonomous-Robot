@@ -26,7 +26,13 @@ LecturasToF leerSensoresToF();
 // Imprime las lecturas por Serial.
 void imprimirLecturasToF(const LecturasToF& lecturas);
 
-// Devuelve true si hay un objeto a menos de TOF_UMBRAL_OPONENTE_MM al frente.
+// Devuelve true si hay un objeto a menos de TOF_UMBRAL_OPONENTE_FRENTE_MM al frente.
 bool detectarOponenteFrente();
+
+// Devuelve true si hay un objeto a menos de TOF_UMBRAL_OPONENTE_LATERAL_MM a la izquierda.
+bool detectarOponenteIzquierda();
+
+// Devuelve true si hay un objeto a menos de TOF_UMBRAL_OPONENTE_LATERAL_MM a la derecha.
+bool detectarOponenteDerecha();
 
 #endif // SENSORES_TOF_H
