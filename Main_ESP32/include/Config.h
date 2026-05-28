@@ -85,7 +85,7 @@ static const float PID_LIMITE_INTEGRAL = 500.0f;
 // ---------------------------------------------------------------------------
 // BNO055 IMU
 // ---------------------------------------------------------------------------
-static const uint8_t BNO055_DIRECCION_I2C = 0x29;  // ADR sin conectar = 0x29
+static const uint8_t BNO055_DIRECCION_I2C = 0x28;  // Sin pin ADR = 0x28
 
 // ---------------------------------------------------------------------------
 // QTR-8A — sensor de línea (2 canales analógicos)
