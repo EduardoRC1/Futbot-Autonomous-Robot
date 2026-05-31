@@ -98,17 +98,29 @@ void ejecutarJugadaActual() {
         break;
     }
 
-    case EVADIENDO_RIVAL:
+    case EVADIENDO_RIVAL: {
         evasionActiva = false;
-        if (detectarOponenteIzquierda() && !detectarOponenteDerecha())
-            pivotearDerecha(150);
-        else if (detectarOponenteDerecha() && !detectarOponenteIzquierda())
-            pivotearIzquierda(150);
-        else if (detectarOponenteFrente())
-            pivotearIzquierda(150);
-        else
-            pivotearIzquierda(150);
+        bool opI = detectarOponenteIzquierda();
+        bool opD = detectarOponenteDerecha();
+
+        if (opI && opD) {
+            // Ambos lados bloqueados → retroceder para no quedar atorado
+            moverMotores(-150, -150);
+        } else if (opI && !opD) {
+            // Oponente a la izquierda → girar a la derecha (lado libre)
+            girarSuaveDerecha(150);
+        } else if (opD && !opI) {
+            // Oponente a la derecha → girar a la izquierda (lado libre)
+            girarSuaveIzquierda(150);
+        } else {
+            // Oponente al frente → girar hacia el lado con MÁS espacio
+            if (obtenerDistanciaIzquierda() >= obtenerDistanciaDerecha())
+                girarSuaveIzquierda(150);
+            else
+                girarSuaveDerecha(150);
+        }
         break;
+    }
 
     case INTERCEPTANDO: {
         evasionActiva = false;
