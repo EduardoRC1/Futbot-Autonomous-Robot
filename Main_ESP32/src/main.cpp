@@ -16,6 +16,7 @@
 // ============================================================================
 
 #include <Arduino.h>
+#include "BluetoothSerial.h"
 #include "Config.h"
 #include "BusI2C.h"
 #include "SensoresToF.h"
@@ -27,8 +28,18 @@
 #include "Comunicacion.h"
 #include "Estrategia.h"
 
+// Monitor inalámbrico por Bluetooth (app: "Serial Bluetooth Terminal" en Android)
+BluetoothSerial SerialBT;
+
+// Envía un mensaje por USB y por Bluetooth a la vez
+static void enviarDual(const char* msg) {
+    Serial.print(msg);
+    SerialBT.print(msg);
+}
+
 void setup() {
     Serial.begin(115200);
+    SerialBT.begin("Futbot_Monitor");
     delay(2000);
 
     Serial.println();
@@ -36,6 +47,7 @@ void setup() {
     Serial.println("  FUTBOT — Sistema de Control v2.0");
     Serial.println("  Universidad de Matamoros");
     Serial.println("==============================================");
+    Serial.println("[BT] Monitor Bluetooth activo: 'Futbot_Monitor'");
     Serial.println();
 
     // --- Paso 1: Bus I2C ---
@@ -122,12 +134,21 @@ void loop() {
         bool opD = detectarOponenteDerecha();
         bool linea = detectarLineaBlanca();
 
-        Serial.printf("[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
-                      nombreEstado(obtenerEstadoActual()),
-                      opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
-                      linea ? "SI" : "no",
-                      obtenerValorQTR(0), obtenerValorQTR(1),
-                      datosCamara.balonDetectado ? "SI" : "no");
+        char buffer[200];
+        snprintf(buffer, sizeof(buffer),
+                 "Distancias -> F:%umm | I:%umm | D:%umm\n",
+                 obtenerDistanciaFrente(), obtenerDistanciaIzquierda(),
+                 obtenerDistanciaDerecha());
+        SerialBT.print(buffer);
+
+        snprintf(buffer, sizeof(buffer),
+                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
+                 nombreEstado(obtenerEstadoActual()),
+                 opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
+                 linea ? "SI" : "no",
+                 obtenerValorQTR(0), obtenerValorQTR(1),
+                 datosCamara.balonDetectado ? "SI" : "no");
+        enviarDual(buffer);
     }
 
     // 7. Pequeña pausa para no saturar el bus
