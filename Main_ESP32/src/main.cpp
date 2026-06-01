@@ -39,7 +39,11 @@ static void enviarDual(const char* msg) {
 
 void setup() {
     Serial.begin(115200);
-    SerialBT.begin("Futbot_Monitor");
+    #ifdef ROBOT_A
+  SerialBT.begin("Futbot_Monitor_A");
+#else
+  SerialBT.begin("Futbot_Monitor_B");
+#endif
     delay(2000);
 
     Serial.println();
