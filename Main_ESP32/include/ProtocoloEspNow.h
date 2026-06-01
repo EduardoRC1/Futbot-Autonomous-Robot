@@ -8,8 +8,8 @@
 #include <Arduino.h>
 
 // Selector de robot — descomentar la línea correspondiente antes de compilar
-#define ROBOT_A
-//#define ROBOT_B
+//#define ROBOT_A
+#define ROBOT_B
 
 typedef struct MensajeVision {
     bool  balonDetectado;
