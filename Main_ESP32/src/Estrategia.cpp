@@ -9,7 +9,7 @@
 #include "Config.h"
 #include <math.h>
 
-static EstadoRobot estadoActual = ESPERANDO_EN_ZONA;
+static EstadoRobot estadoActual = INTERCEPTANDO;
 
 // Estado no-bloqueante para evasión de línea
 static unsigned long tiempoInicioEvasion = 0;
@@ -17,7 +17,7 @@ static bool          evasionActiva       = false;
 static uint8_t       faseEvasion         = 0;
 
 void inicializarEstrategia() {
-    estadoActual        = ESPERANDO_EN_ZONA;
+    estadoActual        = INTERCEPTANDO;
     evasionActiva       = false;
     faseEvasion         = 0;
     tiempoInicioEvasion = 0;
@@ -27,8 +27,8 @@ EstadoRobot obtenerEstadoActual() { return estadoActual; }
 
 const char* nombreEstado(EstadoRobot estado) {
     switch (estado) {
-        case ESPERANDO_EN_ZONA:  return "ESPERANDO";
         case INTERCEPTANDO:      return "INTERCEPTANDO";
+        case ESPERANDO_EN_ZONA:  return "ESPERANDO";
         case DESPEJANDO:         return "DESPEJANDO";
         case REGRESANDO_A_BASE:  return "REGRESANDO";
         case EVADIENDO_LINEA:    return "EVAD_LINEA";
@@ -67,7 +67,7 @@ void evaluarEntorno() {
             estadoActual = DESPEJANDO;
         }
     } else {
-        estadoActual = ESPERANDO_EN_ZONA;
+        estadoActual = INTERCEPTANDO;
     }
 }
 
@@ -92,7 +92,7 @@ void ejecutarJugadaActual() {
             if (ahora - tiempoInicioEvasion >= 200) {
                 evasionActiva = false;
                 faseEvasion   = 0;
-                estadoActual  = ESPERANDO_EN_ZONA;
+                estadoActual  = INTERCEPTANDO;
             }
         }
         break;
