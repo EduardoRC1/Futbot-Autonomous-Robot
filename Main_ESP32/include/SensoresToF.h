@@ -35,4 +35,9 @@ bool detectarOponenteIzquierda();
 // Devuelve true si hay un objeto a menos de TOF_UMBRAL_OPONENTE_LATERAL_MM a la derecha.
 bool detectarOponenteDerecha();
 
+// Devuelven la última distancia válida medida (mm) de cada sensor.
+uint16_t obtenerDistanciaFrente();
+uint16_t obtenerDistanciaIzquierda();
+uint16_t obtenerDistanciaDerecha();
+
 #endif // SENSORES_TOF_H
