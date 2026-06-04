@@ -149,7 +149,3 @@ bool detectarOponenteIzquierda() {
 bool detectarOponenteDerecha() {
     return (derOK && ultimaLecturaDer < TOF_UMBRAL_OPONENTE_LATERAL_MM);
 }
-
-uint16_t obtenerDistanciaFrente()     { return ultimaLecturaFrente; }
-uint16_t obtenerDistanciaIzquierda()  { return ultimaLecturaIzq; }
-uint16_t obtenerDistanciaDerecha()    { return ultimaLecturaDer; }

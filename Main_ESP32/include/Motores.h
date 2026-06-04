@@ -11,8 +11,4 @@ void detenerRobot();
 void pivotearDerecha(int velocidad);
 void pivotearIzquierda(int velocidad);
 
-// Giro suave: una llanta se detiene y la otra avanza (giro amplio, no en su lugar)
-void girarSuaveDerecha(int velocidad);
-void girarSuaveIzquierda(int velocidad);
-
 #endif // MOTORES_H

@@ -9,7 +9,7 @@
 #include "Config.h"
 #include <math.h>
 
-static EstadoRobot estadoActual = INTERCEPTANDO;
+static EstadoRobot estadoActual = ESPERANDO_EN_ZONA;
 
 // Estado no-bloqueante para evasión de línea
 static unsigned long tiempoInicioEvasion = 0;
@@ -17,7 +17,7 @@ static bool          evasionActiva       = false;
 static uint8_t       faseEvasion         = 0;
 
 void inicializarEstrategia() {
-    estadoActual        = INTERCEPTANDO;
+    estadoActual        = ESPERANDO_EN_ZONA;
     evasionActiva       = false;
     faseEvasion         = 0;
     tiempoInicioEvasion = 0;
@@ -27,8 +27,8 @@ EstadoRobot obtenerEstadoActual() { return estadoActual; }
 
 const char* nombreEstado(EstadoRobot estado) {
     switch (estado) {
-        case INTERCEPTANDO:      return "INTERCEPTANDO";
         case ESPERANDO_EN_ZONA:  return "ESPERANDO";
+        case INTERCEPTANDO:      return "INTERCEPTANDO";
         case DESPEJANDO:         return "DESPEJANDO";
         case REGRESANDO_A_BASE:  return "REGRESANDO";
         case EVADIENDO_LINEA:    return "EVAD_LINEA";
@@ -67,7 +67,7 @@ void evaluarEntorno() {
             estadoActual = DESPEJANDO;
         }
     } else {
-        estadoActual = INTERCEPTANDO;
+        estadoActual = ESPERANDO_EN_ZONA;
     }
 }
 
@@ -92,35 +92,23 @@ void ejecutarJugadaActual() {
             if (ahora - tiempoInicioEvasion >= 200) {
                 evasionActiva = false;
                 faseEvasion   = 0;
-                estadoActual  = INTERCEPTANDO;
+                estadoActual  = ESPERANDO_EN_ZONA;
             }
         }
         break;
     }
 
-    case EVADIENDO_RIVAL: {
+    case EVADIENDO_RIVAL:
         evasionActiva = false;
-        bool opI = detectarOponenteIzquierda();
-        bool opD = detectarOponenteDerecha();
-
-        if (opI && opD) {
-            // Ambos lados bloqueados → retroceder para no quedar atorado
-            moverMotores(-150, -150);
-        } else if (opI && !opD) {
-            // Oponente a la izquierda → girar a la derecha (lado libre)
-            girarSuaveDerecha(150);
-        } else if (opD && !opI) {
-            // Oponente a la derecha → girar a la izquierda (lado libre)
-            girarSuaveIzquierda(150);
-        } else {
-            // Oponente al frente → girar hacia el lado con MÁS espacio
-            if (obtenerDistanciaIzquierda() >= obtenerDistanciaDerecha())
-                girarSuaveIzquierda(150);
-            else
-                girarSuaveDerecha(150);
-        }
+        if (detectarOponenteIzquierda() && !detectarOponenteDerecha())
+            pivotearDerecha(150);
+        else if (detectarOponenteDerecha() && !detectarOponenteIzquierda())
+            pivotearIzquierda(150);
+        else if (detectarOponenteFrente())
+            pivotearIzquierda(150);
+        else
+            pivotearIzquierda(150);
         break;
-    }
 
     case INTERCEPTANDO: {
         evasionActiva = false;

@@ -10,7 +10,6 @@ MensajeVision datosCamara;
 
 static volatile bool          datosNuevosRecibidos = false;
 static volatile unsigned long tiempoUltimoMensaje  = 0;
-static volatile unsigned long contadorMensajes     = 0;
 
 // Callback ESP-NOW — se ejecuta en Core 0
 static void alRecibirDatos(const uint8_t* mac,
@@ -21,7 +20,6 @@ static void alRecibirDatos(const uint8_t* mac,
     memcpy((void*)&bufferCamara, datos, sizeof(MensajeVision));
     datosNuevosRecibidos = true;
     tiempoUltimoMensaje  = millis();
-    contadorMensajes++;
 }
 
 void inicializarRadio() {
@@ -52,9 +50,3 @@ void revisarConexionSegura() {
 bool hayDatosNuevos() { return datosNuevosRecibidos; }
 
 void limpiarBanderaDatos() { datosNuevosRecibidos = false; }
-
-bool camaraConectada() {
-    return (millis() - tiempoUltimoMensaje) <= TIMEOUT_CAMARA_MS;
-}
-
-unsigned long obtenerContadorMensajes() { return contadorMensajes; }

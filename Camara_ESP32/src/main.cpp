@@ -30,11 +30,7 @@ void setup() {
 
   Serial.println();
   Serial.println("==========================================");
-#ifdef ROBOT_A
-  Serial.println("  FUTBOT CAMARA — Robot A");
-#else
   Serial.println("  FUTBOT CAMARA — Robot B");
-#endif
   Serial.println("==========================================");
 
   // Configuracion de Hardware (Ai-Thinker)

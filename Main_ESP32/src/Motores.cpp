@@ -49,8 +49,3 @@ void detenerRobot() {
 
 void pivotearDerecha(int velocidad)   { moverMotores( velocidad, -velocidad); }
 void pivotearIzquierda(int velocidad) { moverMotores(-velocidad,  velocidad); }
-
-// Giro suave: el motor del lado hacia donde gira se detiene, el otro avanza.
-// Derecha → motor derecho parado, motor izquierdo avanza.
-void girarSuaveDerecha(int velocidad)   { moverMotores( velocidad, 0); }
-void girarSuaveIzquierda(int velocidad) { moverMotores(0,  velocidad); }
