@@ -17,7 +17,5 @@ void obtenerDatosCamara();
 bool hayDatosNuevos();
 void limpiarBanderaDatos();
 void revisarConexionSegura();
-bool camaraConectada();
-unsigned long obtenerContadorMensajes();
 
 #endif // COMUNICACION_H

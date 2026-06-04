@@ -39,11 +39,7 @@ static void enviarDual(const char* msg) {
 
 void setup() {
     Serial.begin(115200);
-    #ifdef ROBOT_A
-  SerialBT.begin("Futbot_Monitor_A");
-#else
-  SerialBT.begin("Futbot_Monitor_B");
-#endif
+    SerialBT.begin("Futbot_Monitor");
     delay(2000);
 
     Serial.println();
@@ -138,7 +134,7 @@ void loop() {
         bool opD = detectarOponenteDerecha();
         bool linea = detectarLineaBlanca();
 
-        char buffer[256];
+        char buffer[200];
         snprintf(buffer, sizeof(buffer),
                  "Distancias -> F:%umm | I:%umm | D:%umm\n",
                  obtenerDistanciaFrente(), obtenerDistanciaIzquierda(),
@@ -146,14 +142,12 @@ void loop() {
         SerialBT.print(buffer);
 
         snprintf(buffer, sizeof(buffer),
-                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s | Cam=%s (msgs=%lu)\n",
+                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s\n",
                  nombreEstado(obtenerEstadoActual()),
                  opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
                  linea ? "SI" : "no",
                  obtenerValorQTR(0), obtenerValorQTR(1),
-                 datosCamara.balonDetectado ? "SI" : "no",
-                 camaraConectada() ? "OK" : "SIN_CONEXION",
-                 obtenerContadorMensajes());
+                 datosCamara.balonDetectado ? "SI" : "no");
         enviarDual(buffer);
     }
 
