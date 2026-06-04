@@ -38,9 +38,6 @@ const char* nombreEstado(EstadoRobot estado) {
 }
 
 void evaluarEntorno() {
-    float xRobot = obtenerCoordenadaX();
-    float yRobot = obtenerCoordenadaY();
-
     // Prioridad 1: línea blanca (solo QTR — geocerca deshabilitada
     // porque los encoders generan pulsos falsos por ruido de motores)
     if (detectarLineaBlanca()) {
@@ -54,14 +51,11 @@ void evaluarEntorno() {
         return;
     }
 
-    // Prioridad 3: lógica de balón
+    // Prioridad 3: lógica de balón — se decide SOLO con datos de la cámara.
+    // No se usa odometría/brújula porque los encoders son poco confiables y
+    // hacían que el robot creyera que el balón estaba pasando media cancha.
     if (datosCamara.balonDetectado) {
-        float anguloRad        = leerRumboBrujula() * (PI / 180.0f);
-        float xBalonAprox      = xRobot + datosCamara.distanciaEstimada * cosf(anguloRad);
-
-        if (xBalonAprox > 109.5f) {
-            estadoActual = REGRESANDO_A_BASE;
-        } else if (datosCamara.distanciaEstimada > 15.0f) {
+        if (datosCamara.distanciaEstimada > 15.0f) {
             estadoActual = INTERCEPTANDO;
         } else {
             estadoActual = DESPEJANDO;
