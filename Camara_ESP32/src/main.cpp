@@ -130,6 +130,29 @@ void loop() {
     datosSalida.balonDetectado = false;
   }
 
+  // --- Deteccion de porteria enemiga ---
+  // Buscar pixeles blancos/brillantes en la zona central-superior del frame.
+  // La porteria se ve como una franja clara (blanca/gris) en la mitad superior.
+  int porteriaPixeles = 0;
+  int mitadAltura = fb->height / 2;
+  int tercioIzq   = fb->width / 3;
+  int tercioDer   = fb->width * 2 / 3;
+
+  for (int y = 0; y < mitadAltura; y += 4) {
+    for (int x = tercioIzq; x < tercioDer; x += 4) {
+      int idx = y * fb->width + x;
+      uint8_t hi = fb->buf[idx * 2];
+      uint8_t lo = fb->buf[idx * 2 + 1];
+      uint8_t r = hi & 0xF8;
+      uint8_t g = ((hi & 0x07) << 5) | ((lo & 0xE0) >> 3);
+      uint8_t b = (lo & 0x1F) << 3;
+      if (r > 180 && g > 180 && b > 180) {
+        porteriaPixeles++;
+      }
+    }
+  }
+  datosSalida.porteriaEnemigaAlineada = (porteriaPixeles > 80);
+
   // Enviar al Cerebro
   esp_now_send(direccionMacCerebro, (uint8_t *) &datosSalida, sizeof(datosSalida));
 
@@ -140,12 +163,16 @@ void loop() {
   if (millis() - ultimoLog > 3000) {
     ultimoLog = millis();
     if (datosSalida.balonDetectado) {
-      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f px=%d frames=%lu\n",
+      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f px=%d Port=%s frames=%lu\n",
         datosSalida.coordX, datosSalida.coordY,
-        datosSalida.distanciaEstimada, pixelesEncontrados, frameCount);
+        datosSalida.distanciaEstimada, pixelesEncontrados,
+        datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
+        frameCount);
     } else {
-      Serial.printf("[CAM] Balon no — px=%d frames=%lu\n",
-        pixelesEncontrados, frameCount);
+      Serial.printf("[CAM] Balon no — px=%d Port=%s frames=%lu\n",
+        pixelesEncontrados,
+        datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
+        frameCount);
     }
   }
 }

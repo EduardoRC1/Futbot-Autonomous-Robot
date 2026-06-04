@@ -1,13 +1,10 @@
 #include "Estrategia.h"
 #include "SensoresToF.h"
-#include "SensorIMU.h"
 #include "SensorLinea.h"
 #include "Motores.h"
 #include "Comunicacion.h"
-#include "Odometria.h"
 #include "ControlPID.h"
 #include "Config.h"
-#include <math.h>
 
 static EstadoRobot estadoActual = ESPERANDO_EN_ZONA;
 
@@ -30,7 +27,6 @@ const char* nombreEstado(EstadoRobot estado) {
         case ESPERANDO_EN_ZONA:  return "ESPERANDO";
         case INTERCEPTANDO:      return "INTERCEPTANDO";
         case DESPEJANDO:         return "DESPEJANDO";
-        case REGRESANDO_A_BASE:  return "REGRESANDO";
         case EVADIENDO_LINEA:    return "EVAD_LINEA";
         case EVADIENDO_RIVAL:    return "EVAD_RIVAL";
         default:                 return "???";
@@ -38,24 +34,26 @@ const char* nombreEstado(EstadoRobot estado) {
 }
 
 void evaluarEntorno() {
-    // Prioridad 1: línea blanca (solo QTR — geocerca deshabilitada
-    // porque los encoders generan pulsos falsos por ruido de motores)
+    // Si la evasión de línea está en progreso, dejarla terminar sin
+    // re-evaluar — la secuencia retroceder→girar debe completarse.
+    if (evasionActiva) return;
+
+    // Prioridad 1: línea blanca
     if (detectarLineaBlanca()) {
         estadoActual = EVADIENDO_LINEA;
         return;
     }
 
-    // Prioridad 2: oponente detectado (frente, izquierda o derecha)
+    // Prioridad 2: oponente detectado
     if (detectarOponenteFrente() || detectarOponenteIzquierda() || detectarOponenteDerecha()) {
         estadoActual = EVADIENDO_RIVAL;
         return;
     }
 
-    // Prioridad 3: lógica de balón — se decide SOLO con datos de la cámara.
-    // No se usa odometría/brújula porque los encoders son poco confiables y
-    // hacían que el robot creyera que el balón estaba pasando media cancha.
+    // Prioridad 3: balón — solo datos de cámara, sin odometría.
+    // UMBRAL_DESPEJE calibrado para la escala de distanciaEstimada (5000/sqrt(px)).
     if (datosCamara.balonDetectado) {
-        if (datosCamara.distanciaEstimada > 15.0f) {
+        if (datosCamara.distanciaEstimada > UMBRAL_DESPEJE) {
             estadoActual = INTERCEPTANDO;
         } else {
             estadoActual = DESPEJANDO;
@@ -93,21 +91,16 @@ void ejecutarJugadaActual() {
     }
 
     case EVADIENDO_RIVAL: {
-        evasionActiva = false;
         bool opI = detectarOponenteIzquierda();
         bool opD = detectarOponenteDerecha();
 
         if (opI && opD) {
-            // Ambos lados bloqueados → retroceder para no quedar atorado
             moverMotores(-150, -150);
         } else if (opI && !opD) {
-            // Oponente a la izquierda → girar a la derecha (lado libre)
             girarSuaveDerecha(150);
         } else if (opD && !opI) {
-            // Oponente a la derecha → girar a la izquierda (lado libre)
             girarSuaveIzquierda(150);
         } else {
-            // Oponente al frente → girar hacia el lado con MÁS espacio
             if (obtenerDistanciaIzquierda() >= obtenerDistanciaDerecha())
                 girarSuaveIzquierda(150);
             else
@@ -117,7 +110,6 @@ void ejecutarJugadaActual() {
     }
 
     case INTERCEPTANDO: {
-        evasionActiva = false;
         float errorX = datosCamara.coordX - 160.0f;
         int ajuste   = calcularVelocidadPID(errorX);
         moverMotores(constrain(200 + ajuste, -255, 255),
@@ -126,24 +118,24 @@ void ejecutarJugadaActual() {
     }
 
     case DESPEJANDO: {
-        evasionActiva = false;
-        float angulo = leerRumboBrujula();
-        if (angulo > 15.0f && angulo < 180.0f)
-            pivotearIzquierda(150);
-        else if (angulo >= 180.0f && angulo < 345.0f)
-            pivotearDerecha(150);
-        else
+        // Usa coordX de la cámara para decidir hacia dónde despejar.
+        // Si la portería está alineada → avanzar recto a máxima velocidad.
+        // Si no, pivotear hacia el centro del frame para corregir ángulo.
+        if (datosCamara.porteriaEnemigaAlineada) {
             moverMotores(255, 255);
+        } else {
+            float errorX = datosCamara.coordX - 160.0f;
+            if (errorX > 20.0f)
+                pivotearDerecha(150);
+            else if (errorX < -20.0f)
+                pivotearIzquierda(150);
+            else
+                moverMotores(255, 255);
+        }
         break;
     }
 
-    case REGRESANDO_A_BASE:
-        evasionActiva = false;
-        moverMotores(-150, -150);
-        break;
-
     case ESPERANDO_EN_ZONA:
-        evasionActiva = false;
         detenerRobot();
         break;
     }

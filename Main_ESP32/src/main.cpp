@@ -142,12 +142,15 @@ void loop() {
         SerialBT.print(buffer);
 
         snprintf(buffer, sizeof(buffer),
-                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u) | Balon=%s | Cam=%s (msgs=%lu)\n",
+                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u)"
+                 " | Balon=%s dist=%.0f Port=%s | Cam=%s (msgs=%lu)\n",
                  nombreEstado(obtenerEstadoActual()),
                  opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
                  linea ? "SI" : "no",
                  obtenerValorQTR(0), obtenerValorQTR(1),
                  datosCamara.balonDetectado ? "SI" : "no",
+                 datosCamara.distanciaEstimada,
+                 datosCamara.porteriaEnemigaAlineada ? "SI" : "no",
                  camaraConectada() ? "OK" : "SIN_CONEXION",
                  obtenerContadorMensajes());
         enviarDual(buffer);
