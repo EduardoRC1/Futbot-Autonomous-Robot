@@ -96,6 +96,14 @@ static const uint8_t QTR_NUM_CANALES = 2;
 static const uint16_t QTR_UMBRAL_LINEA = 3500;  // Valor 0-4095, ajustar en cancha (subido de 500)
 
 // ---------------------------------------------------------------------------
+// Estrategia — umbral de distancia para DESPEJANDO
+// La cámara calcula distanciaEstimada = 5000/sqrt(px).
+// Con QVGA muestreado 1:4, el mínimo posible es ~36.
+// Valores bajos = balón muy cerca (grande en el frame).
+// ---------------------------------------------------------------------------
+static const float UMBRAL_DESPEJE = 50.0f;
+
+// ---------------------------------------------------------------------------
 // Comunicación — timeout de la cámara (ms)
 // ---------------------------------------------------------------------------
 static const unsigned long TIMEOUT_CAMARA_MS = 500;

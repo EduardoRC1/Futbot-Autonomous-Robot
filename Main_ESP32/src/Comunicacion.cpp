@@ -4,6 +4,10 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 
+// Spinlock para proteger el buffer entre Core 0 (callback) y Core 1 (loop).
+// noInterrupts() solo afecta al núcleo actual; portMUX bloquea ambos.
+static portMUX_TYPE muxCamara = portMUX_INITIALIZER_UNLOCKED;
+
 static volatile MensajeVision bufferCamara;
 
 MensajeVision datosCamara;
@@ -18,10 +22,12 @@ static void alRecibirDatos(const uint8_t* mac,
     if (memcmp(mac, direccionMacCamara, 6) != 0) return;
     if (len != sizeof(MensajeVision)) return;
 
+    portENTER_CRITICAL(&muxCamara);
     memcpy((void*)&bufferCamara, datos, sizeof(MensajeVision));
     datosNuevosRecibidos = true;
     tiempoUltimoMensaje  = millis();
     contadorMensajes++;
+    portEXIT_CRITICAL(&muxCamara);
 }
 
 void inicializarRadio() {
@@ -38,9 +44,9 @@ void inicializarRadio() {
 }
 
 void obtenerDatosCamara() {
-    noInterrupts();
+    portENTER_CRITICAL(&muxCamara);
     memcpy(&datosCamara, (const void*)&bufferCamara, sizeof(MensajeVision));
-    interrupts();
+    portEXIT_CRITICAL(&muxCamara);
 }
 
 void revisarConexionSegura() {
