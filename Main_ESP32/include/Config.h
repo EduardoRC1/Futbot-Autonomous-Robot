@@ -101,7 +101,11 @@ static const uint16_t QTR_UMBRAL_LINEA = 3500;  // Valor 0-4095, ajustar en canc
 // Con QVGA muestreado 1:4, el mínimo posible es ~36.
 // Valores bajos = balón muy cerca (grande en el frame).
 // ---------------------------------------------------------------------------
-static const float UMBRAL_DESPEJE = 50.0f;
+static const float UMBRAL_DESPEJE      = 50.0f;
+static const float HISTERESIS_DESPEJE  =  5.0f;  // Entra a DESPEJANDO en <45, sale en >55
+
+// Duración mínima de evasión de rival (ms)
+static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 200;
 
 // ---------------------------------------------------------------------------
 // Comunicación — timeout de la cámara (ms)
