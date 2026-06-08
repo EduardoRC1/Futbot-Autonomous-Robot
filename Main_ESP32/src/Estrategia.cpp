@@ -6,18 +6,28 @@
 #include "ControlPID.h"
 #include "Config.h"
 
-static EstadoRobot estadoActual = ESPERANDO_EN_ZONA;
+static EstadoRobot estadoActual  = ESPERANDO_EN_ZONA;
+static EstadoRobot estadoPrevio  = ESPERANDO_EN_ZONA;
 
 // Estado no-bloqueante para evasión de línea
 static unsigned long tiempoInicioEvasion = 0;
 static bool          evasionActiva       = false;
 static uint8_t       faseEvasion         = 0;
+static int8_t        ladoLineaDetectado  = -1;
+
+// Estado no-bloqueante para evasión de rival (duración mínima)
+static unsigned long tiempoInicioEvasionRival = 0;
+static bool          evasionRivalActiva       = false;
 
 void inicializarEstrategia() {
-    estadoActual        = ESPERANDO_EN_ZONA;
-    evasionActiva       = false;
-    faseEvasion         = 0;
-    tiempoInicioEvasion = 0;
+    estadoActual             = ESPERANDO_EN_ZONA;
+    estadoPrevio             = ESPERANDO_EN_ZONA;
+    evasionActiva            = false;
+    faseEvasion              = 0;
+    tiempoInicioEvasion      = 0;
+    ladoLineaDetectado       = -1;
+    evasionRivalActiva       = false;
+    tiempoInicioEvasionRival = 0;
 }
 
 EstadoRobot obtenerEstadoActual() { return estadoActual; }
@@ -38,25 +48,43 @@ void evaluarEntorno() {
     // re-evaluar — la secuencia retroceder→girar debe completarse.
     if (evasionActiva) return;
 
+    // Si la evasión de rival tiene duración mínima activa, no re-evaluar.
+    if (evasionRivalActiva &&
+        (millis() - tiempoInicioEvasionRival < TIEMPO_MIN_EVASION_RIVAL_MS)) {
+        return;
+    }
+    evasionRivalActiva = false;
+
     // Prioridad 1: línea blanca
     if (detectarLineaBlanca()) {
+        ladoLineaDetectado = obtenerLadoLinea();
         estadoActual = EVADIENDO_LINEA;
         return;
     }
 
     // Prioridad 2: oponente detectado
     if (detectarOponenteFrente() || detectarOponenteIzquierda() || detectarOponenteDerecha()) {
+        if (estadoActual != EVADIENDO_RIVAL) {
+            evasionRivalActiva       = true;
+            tiempoInicioEvasionRival = millis();
+        }
         estadoActual = EVADIENDO_RIVAL;
         return;
     }
 
     // Prioridad 3: balón — solo datos de cámara, sin odometría.
-    // UMBRAL_DESPEJE calibrado para la escala de distanciaEstimada (5000/sqrt(px)).
+    // Histéresis: entra a DESPEJANDO en < (UMBRAL - HISTERESIS),
+    //             sale de DESPEJANDO en > (UMBRAL + HISTERESIS).
     if (datosCamara.balonDetectado) {
-        if (datosCamara.distanciaEstimada > UMBRAL_DESPEJE) {
-            estadoActual = INTERCEPTANDO;
+        float dist = datosCamara.distanciaEstimada;
+        if (estadoActual == DESPEJANDO) {
+            if (dist > UMBRAL_DESPEJE + HISTERESIS_DESPEJE)
+                estadoActual = INTERCEPTANDO;
         } else {
-            estadoActual = DESPEJANDO;
+            if (dist < UMBRAL_DESPEJE - HISTERESIS_DESPEJE)
+                estadoActual = DESPEJANDO;
+            else if (dist >= UMBRAL_DESPEJE - HISTERESIS_DESPEJE)
+                estadoActual = INTERCEPTANDO;
         }
     } else {
         estadoActual = ESPERANDO_EN_ZONA;
@@ -64,6 +92,12 @@ void evaluarEntorno() {
 }
 
 void ejecutarJugadaActual() {
+    // Reset PID al entrar a INTERCEPTANDO desde otro estado
+    if (estadoActual == INTERCEPTANDO && estadoPrevio != INTERCEPTANDO) {
+        inicializarPID();
+    }
+    estadoPrevio = estadoActual;
+
     switch (estadoActual) {
 
     case EVADIENDO_LINEA: {
@@ -74,13 +108,22 @@ void ejecutarJugadaActual() {
             tiempoInicioEvasion = ahora;
         }
         if (faseEvasion == 0) {
+            // Fase 0: retroceder
             moverMotores(-255, -255);
             if (ahora - tiempoInicioEvasion >= 300) {
                 faseEvasion         = 1;
                 tiempoInicioEvasion = ahora;
             }
         } else {
-            moverMotores(200, -200);
+            // Fase 1: girar HACIA EL LADO OPUESTO de donde se detectó la línea.
+            // Q0 (VP) = sensor izquierdo → girar a la derecha (200, -200)
+            // Q1 (VN) = sensor derecho  → girar a la izquierda (-200, 200)
+            // Ambos o desconocido → girar a la derecha (default)
+            if (ladoLineaDetectado == 1) {
+                moverMotores(-200, 200);   // girar izquierda
+            } else {
+                moverMotores(200, -200);   // girar derecha (default / Q0 / ambos)
+            }
             if (ahora - tiempoInicioEvasion >= 200) {
                 evasionActiva = false;
                 faseEvasion   = 0;
@@ -118,19 +161,23 @@ void ejecutarJugadaActual() {
     }
 
     case DESPEJANDO: {
-        // Usa coordX de la cámara para decidir hacia dónde despejar.
-        // Si la portería está alineada → avanzar recto a máxima velocidad.
-        // Si no, pivotear hacia el centro del frame para corregir ángulo.
+        // Avanzar a máxima velocidad MIENTRAS corrige dirección.
+        // Si la portería está alineada → recto a 255.
+        // Si no, avanzar con diferencial para corregir sin detenerse.
         if (datosCamara.porteriaEnemigaAlineada) {
             moverMotores(255, 255);
         } else {
             float errorX = datosCamara.coordX - 160.0f;
-            if (errorX > 20.0f)
-                pivotearDerecha(150);
-            else if (errorX < -20.0f)
-                pivotearIzquierda(150);
-            else
+            if (errorX > 20.0f) {
+                // Balón a la derecha → curvar a la derecha (rápido/lento)
+                moverMotores(255, 120);
+            } else if (errorX < -20.0f) {
+                // Balón a la izquierda → curvar a la izquierda
+                moverMotores(120, 255);
+            } else {
+                // Centrado → recto a máxima
                 moverMotores(255, 255);
+            }
         }
         break;
     }

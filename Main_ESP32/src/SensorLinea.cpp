@@ -7,6 +7,7 @@ static uint16_t valoresSensor[QTR_NUM_CANALES];
 static const uint8_t pinesQTR[QTR_NUM_CANALES] = { PIN_QTR_1, PIN_QTR_2 };
 static bool lineaActiva = false;
 static uint8_t contadorSaturado = 0;
+static int8_t ultimoLadoLinea = -1;  // 0=Q0, 1=Q1, -1=ninguno/ambos
 
 void inicializarSensorLinea() {
     Serial.println("[Linea] Iniciando QTR-8A...");
@@ -56,10 +57,15 @@ bool detectarLineaBlanca() {
     }
     contadorSaturado = 0;
 
-    for (uint8_t i = 0; i < QTR_NUM_CANALES; i++) {
-        if (valoresSensor[i] > QTR_UMBRAL_LINEA) {
-            return true;
-        }
-    }
-    return false;
+    bool q0 = (valoresSensor[0] > QTR_UMBRAL_LINEA);
+    bool q1 = (valoresSensor[1] > QTR_UMBRAL_LINEA);
+
+    if (q0 && q1)       ultimoLadoLinea = -1;  // ambos
+    else if (q0)         ultimoLadoLinea =  0;
+    else if (q1)         ultimoLadoLinea =  1;
+    else                 ultimoLadoLinea = -1;
+
+    return q0 || q1;
 }
+
+int8_t obtenerLadoLinea() { return ultimoLadoLinea; }
