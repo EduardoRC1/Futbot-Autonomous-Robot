@@ -63,7 +63,19 @@ void evaluarEntorno() {
     }
 
     // Prioridad 2: oponente detectado
-    if (detectarOponenteFrente() || detectarOponenteIzquierda() || detectarOponenteDerecha()) {
+    // EXCEPCIÓN: si la cámara ve el balón cerca Y el ToF frontal detecta algo,
+    // es probable que sea el balón — NO evadir.
+    bool rivalFrente = detectarOponenteFrente();
+    bool rivalIzq    = detectarOponenteIzquierda();
+    bool rivalDer    = detectarOponenteDerecha();
+
+    if (rivalFrente && datosCamara.balonDetectado &&
+        datosCamara.distanciaEstimada < UMBRAL_DESPEJE + 20.0f) {
+        // ToF frontal detecta algo pero la cámara ve el balón cerca → es el balón
+        rivalFrente = false;
+    }
+
+    if (rivalFrente || rivalIzq || rivalDer) {
         if (estadoActual != EVADIENDO_RIVAL) {
             evasionRivalActiva       = true;
             tiempoInicioEvasionRival = millis();
@@ -134,20 +146,34 @@ void ejecutarJugadaActual() {
     }
 
     case EVADIENDO_RIVAL: {
+        bool opF = detectarOponenteFrente();
         bool opI = detectarOponenteIzquierda();
         bool opD = detectarOponenteDerecha();
 
-        if (opI && opD) {
+        if ((opF && opI && opD) || (opI && opD)) {
+            // Bloqueado por ambos lados (o por todos) → retroceder
             moverMotores(-150, -150);
-        } else if (opI && !opD) {
-            girarSuaveDerecha(150);
-        } else if (opD && !opI) {
-            girarSuaveIzquierda(150);
-        } else {
+        } else if (opF && !opI && !opD) {
+            // Solo frente → retroceder y girar al lado con más espacio
             if (obtenerDistanciaIzquierda() >= obtenerDistanciaDerecha())
-                girarSuaveIzquierda(150);
+                moverMotores(-100, -200);  // retrocede curvando a la izquierda
             else
-                girarSuaveDerecha(150);
+                moverMotores(-200, -100);  // retrocede curvando a la derecha
+        } else if (opF && opI) {
+            // Frente + izquierda → retroceder curvando a la derecha
+            moverMotores(-200, -100);
+        } else if (opF && opD) {
+            // Frente + derecha → retroceder curvando a la izquierda
+            moverMotores(-100, -200);
+        } else if (opI && !opD) {
+            // Solo izquierda → girar derecha (alejarse)
+            moverMotores(150, -150);
+        } else if (opD && !opI) {
+            // Solo derecha → girar izquierda (alejarse)
+            moverMotores(-150, 150);
+        } else {
+            // Caso residual → retroceder
+            moverMotores(-150, -150);
         }
         break;
     }
