@@ -8,12 +8,13 @@
 MensajeVision datosSalida;
 
 // --- CALIBRACION DE COLOR — Basketball naranja ---
-// Rangos RGB565→RGB888 ajustados para el naranja de basketball.
-// Valores anteriores (90-255/20-180/0-90) eran muy amplios y detectaban
-// piel, madera, piso café y otros objetos como falsos positivos.
-int rMin = 150, rMax = 255;
-int gMin = 40,  gMax = 160;
-int bMin = 0,   bMax = 60;
+// Ajustar estos valores si hay falsos positivos (detecta cosas que no son balón)
+// o falsos negativos (no detecta el balón). El log de diagnóstico imprime
+// los valores RGB promedio del centro del frame para ayudar a calibrar.
+int rMin = 120, rMax = 255;
+int gMin = 30,  gMax = 170;
+int bMin = 0,   bMax = 80;
+static const int UMBRAL_PIXELES_BALON = 100;
 
 static bool camaraOK  = false;
 static bool espnowOK  = false;
@@ -124,7 +125,7 @@ void loop() {
     }
   }
 
-  if (pixelesEncontrados > 150) {
+  if (pixelesEncontrados > UMBRAL_PIXELES_BALON) {
     datosSalida.balonDetectado = true;
     datosSalida.coordX = sumaX / pixelesEncontrados;
     datosSalida.coordY = sumaY / pixelesEncontrados;
@@ -159,6 +160,27 @@ void loop() {
   // Enviar al Cerebro
   esp_now_send(direccionMacCerebro, (uint8_t *) &datosSalida, sizeof(datosSalida));
 
+  // --- Muestreo RGB del centro del frame para diagnóstico de calibración ---
+  // Promedia un bloque de 8x8 píxeles en el centro de la imagen.
+  long sumR = 0, sumG = 0, sumB = 0;
+  int centroX = fb->width / 2;
+  int centroY = fb->height / 2;
+  int muestras = 0;
+  for (int dy = -4; dy < 4; dy++) {
+    for (int dx = -4; dx < 4; dx++) {
+      int idx = (centroY + dy) * fb->width + (centroX + dx);
+      uint8_t hi = fb->buf[idx * 2];
+      uint8_t lo = fb->buf[idx * 2 + 1];
+      sumR += (hi & 0xF8);
+      sumG += ((hi & 0x07) << 5) | ((lo & 0xE0) >> 3);
+      sumB += (lo & 0x1F) << 3;
+      muestras++;
+    }
+  }
+  uint8_t avgR = sumR / muestras;
+  uint8_t avgG = sumG / muestras;
+  uint8_t avgB = sumB / muestras;
+
   esp_camera_fb_return(fb);
   frameCount++;
 
@@ -166,16 +188,16 @@ void loop() {
   if (millis() - ultimoLog > 3000) {
     ultimoLog = millis();
     if (datosSalida.balonDetectado) {
-      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f px=%d Port=%s frames=%lu\n",
+      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
         datosSalida.coordX, datosSalida.coordY,
         datosSalida.distanciaEstimada, pixelesEncontrados,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
-        frameCount);
+        avgR, avgG, avgB, frameCount);
     } else {
-      Serial.printf("[CAM] Balon no — px=%d Port=%s frames=%lu\n",
+      Serial.printf("[CAM] Balon no — px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
         pixelesEncontrados,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
-        frameCount);
+        avgR, avgG, avgB, frameCount);
     }
   }
 }
