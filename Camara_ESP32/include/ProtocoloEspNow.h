@@ -5,8 +5,9 @@
 // =========================================================================
 // 1. EL INTERRUPTOR DE ROBOTS (Cambia esto antes de subir el codigo)
 // =========================================================================
-#define ROBOT_A // <- Quita las barras (//) para programar la Camara del Robot A
+//#define ROBOT_A // <- Quita las barras (//) para programar la Camara del Robot A
 //#define ROBOT_B   // <- Deja esto asi para programar la Camara del Robot B
+#define ROBOT_HOTFIX  // Cerebro B + Cámara A (ESP32-A murió)
 
 // =========================================================================
 // 2. LA ESTRUCTURA DE DATOS (Universal para ambos robots)
@@ -33,8 +34,13 @@ typedef struct MensajeVision {
   const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x5E, 0xF8};
   const uint8_t direccionMacCamara[]  = {0x8C, 0x94, 0xDF, 0x72, 0xA4, 0xE0};
 
+#elif defined(ROBOT_HOTFIX)
+  // Cerebro B (hardware) + Cámara A (hardware)
+  const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x5E, 0xF8};  // MAC real del Cerebro B
+  const uint8_t direccionMacCamara[]  = {0x88, 0x57, 0x21, 0xC2, 0x0B, 0x68};  // MAC real de Cámara A
+
 #else
-  #error "Definir ROBOT_A o ROBOT_B en ProtocoloEspNow.h linea 8"
+  #error "Definir ROBOT_A, ROBOT_B o ROBOT_HOTFIX en ProtocoloEspNow.h"
 #endif
 
 #endif
