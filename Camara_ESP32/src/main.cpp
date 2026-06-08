@@ -14,7 +14,7 @@ MensajeVision datosSalida;
 int rMin = 120, rMax = 255;
 int gMin = 30,  gMax = 170;
 int bMin = 0,   bMax = 80;
-static const int UMBRAL_PIXELES_BALON = 100;
+static const int UMBRAL_PIXELES_BALON = 40;
 
 static bool camaraOK  = false;
 static bool espnowOK  = false;
