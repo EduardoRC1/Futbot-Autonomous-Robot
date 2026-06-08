@@ -7,10 +7,13 @@
 
 MensajeVision datosSalida;
 
-// --- CALIBRACION DE COLOR AMPLIA (Modo de Busqueda) ---
-int rMin = 90,  rMax = 255;
-int gMin = 20,  gMax = 180;
-int bMin = 0,   bMax = 90;
+// --- CALIBRACION DE COLOR — Basketball naranja ---
+// Rangos RGB565→RGB888 ajustados para el naranja de basketball.
+// Valores anteriores (90-255/20-180/0-90) eran muy amplios y detectaban
+// piel, madera, piso café y otros objetos como falsos positivos.
+int rMin = 150, rMax = 255;
+int gMin = 40,  gMax = 160;
+int bMin = 0,   bMax = 60;
 
 static bool camaraOK  = false;
 static bool espnowOK  = false;
@@ -121,7 +124,7 @@ void loop() {
     }
   }
 
-  if (pixelesEncontrados > 50) {
+  if (pixelesEncontrados > 150) {
     datosSalida.balonDetectado = true;
     datosSalida.coordX = sumaX / pixelesEncontrados;
     datosSalida.coordY = sumaY / pixelesEncontrados;
