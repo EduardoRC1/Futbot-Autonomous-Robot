@@ -1,6 +1,5 @@
 #include "Comunicacion.h"
 #include "Config.h"
-#include "DualSerial.h"
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
@@ -36,12 +35,12 @@ void inicializarRadio() {
     esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
 
     if (esp_now_init() != ESP_OK) {
-        dualPrintln("[Radio] ERROR: ESP-NOW no pudo inicializarse");
+        Serial.println("[Radio] ERROR: ESP-NOW no pudo inicializarse");
         return;
     }
 
     esp_now_register_recv_cb(esp_now_recv_cb_t(alRecibirDatos));
-    dualPrintln("[Radio] ESP-NOW lista");
+    Serial.println("[Radio] ESP-NOW lista");
 }
 
 void obtenerDatosCamara() {
