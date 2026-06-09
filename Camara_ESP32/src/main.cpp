@@ -11,10 +11,10 @@ MensajeVision datosSalida;
 // Ajustar estos valores si hay falsos positivos (detecta cosas que no son balón)
 // o falsos negativos (no detecta el balón). El log de diagnóstico imprime
 // los valores RGB promedio del centro del frame para ayudar a calibrar.
-int rMin = 120, rMax = 255;
-int gMin = 30,  gMax = 170;
-int bMin = 0,   bMax = 80;
-static const int UMBRAL_PIXELES_BALON = 40;
+int rMin = 130, rMax = 255;
+int gMin = 40,  gMax = 130;
+int bMin = 0,   bMax = 60;
+static const int UMBRAL_PIXELES_BALON = 80;
 
 static bool camaraOK  = false;
 static bool espnowOK  = false;
