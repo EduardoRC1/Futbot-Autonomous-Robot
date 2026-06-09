@@ -16,8 +16,8 @@
 // ============================================================================
 
 #include <Arduino.h>
-#include "BluetoothSerial.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include "BusI2C.h"
 #include "SensoresToF.h"
 #include "SensorIMU.h"
@@ -28,79 +28,70 @@
 #include "Comunicacion.h"
 #include "Estrategia.h"
 
-// Monitor inalámbrico por Bluetooth (app: "Serial Bluetooth Terminal" en Android)
-BluetoothSerial SerialBT;
-
-// Envía un mensaje por USB y por Bluetooth a la vez
-static void enviarDual(const char* msg) {
-    Serial.print(msg);
-    SerialBT.print(msg);
-}
-
 void setup() {
     Serial.begin(115200);
-    SerialBT.begin("Futbot_Monitor");
+    inicializarDualSerial();
     delay(2000);
 
-    Serial.println();
-    Serial.println("==============================================");
-    Serial.println("  FUTBOT — Sistema de Control v2.0");
-    Serial.println("  Universidad de Matamoros");
-    Serial.println("==============================================");
-    Serial.println("[BT] Monitor Bluetooth activo: 'Futbot_Monitor'");
-    Serial.println();
+    dualPrintln();
+    dualPrintln("==============================================");
+    dualPrintln("  FUTBOT — Sistema de Control v2.0");
+    dualPrintln("  Universidad de Matamoros");
+    dualPrintln("==============================================");
+    dualPrintln("[BT] Monitor Bluetooth activo: 'Futbot_Monitor'");
+    dualPrintln();
 
     // --- Paso 1: Bus I2C ---
     if (!inicializarBusI2C()) {
-        Serial.println("FATAL: Bus I2C no disponible");
+        dualPrintln("FATAL: Bus I2C no disponible");
         while (true) delay(1000);
     }
-    Serial.println("[I2C] Escaneo inicial:");
+    dualPrintln("[I2C] Escaneo inicial:");
     escanearBusI2C();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 2: Sensores ToF ---
     bool tofOK = inicializarSensoresToF();
     if (!tofOK) {
-        Serial.println("AVISO: Ningún sensor ToF respondió — continuando sin ellos");
+        dualPrintln("AVISO: Ningún sensor ToF respondió — continuando sin ellos");
     }
-    Serial.println("[I2C] Escaneo post-ToF:");
+    dualPrintln("[I2C] Escaneo post-ToF:");
     escanearBusI2C();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 3: IMU ---
     inicializarIMU();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 4: Sensor de línea ---
     inicializarSensorLinea();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 5: Motores ---
     inicializarMotores();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 6: Odometría ---
     inicializarOdometria();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 7: PID ---
     inicializarPID();
-    Serial.printf("[PID] Inicializado (Kp=%.2f Ki=%.2f Kd=%.2f)\n", Kp, Ki, Kd);
-    Serial.println();
+    dualPrintf("[PID] Inicializado (Kp=%.2f Ki=%.2f Kd=%.2f)\n", Kp, Ki, Kd);
+    dualPrintln();
 
     // --- Paso 8: Radio ---
     inicializarRadio();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 9: Estrategia ---
     inicializarEstrategia();
-    Serial.println();
+    dualPrintln();
 
-    Serial.println("==============================================");
-    Serial.println("  Sistema listo — entrando al loop principal");
-    Serial.println("==============================================");
-    Serial.println();
+    dualPrintln("==============================================");
+    dualPrintln("  Sistema listo — entrando al loop principal");
+    dualPrintln("==============================================");
+    dualPrintln();
 }
 
 static unsigned long ultimoDiag = 0;
@@ -134,15 +125,7 @@ void loop() {
         bool opD = detectarOponenteDerecha();
         bool linea = detectarLineaBlanca();
 
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer),
-                 "Distancias -> F:%umm | I:%umm | D:%umm\n",
-                 obtenerDistanciaFrente(), obtenerDistanciaIzquierda(),
-                 obtenerDistanciaDerecha());
-        SerialBT.print(buffer);
-
-        snprintf(buffer, sizeof(buffer),
-                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u)"
+        dualPrintf("[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u)"
                  " | Balon=%s dist=%.0f Port=%s | Cam=%s (msgs=%lu)\n",
                  nombreEstado(obtenerEstadoActual()),
                  opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
@@ -153,7 +136,6 @@ void loop() {
                  datosCamara.porteriaEnemigaAlineada ? "SI" : "no",
                  camaraConectada() ? "OK" : "SIN_CONEXION",
                  obtenerContadorMensajes());
-        enviarDual(buffer);
     }
 
     // 7. Pequeña pausa para no saturar el bus

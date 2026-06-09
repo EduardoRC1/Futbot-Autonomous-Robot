@@ -1,5 +1,6 @@
 #include "SensoresToF.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include <Wire.h>
 #include <Adafruit_VL53L0X.h>
 
@@ -35,7 +36,7 @@ static bool iniciarUnSensor(Adafruit_VL53L0X& sensor, int pinXshut,
     Wire.beginTransmission(0x29);
     uint8_t ack = Wire.endTransmission();
     if (ack != 0) {
-        Serial.printf("[ToF] %s: no responde en 0x29 (error=%d)\n", nombre, ack);
+        dualPrintf("[ToF] %s: no responde en 0x29 (error=%d)\n", nombre, ack);
         return false;
     }
 
@@ -44,20 +45,20 @@ static bool iniciarUnSensor(Adafruit_VL53L0X& sensor, int pinXshut,
     // configurados, pero puede fallar si el bus está ocupado.
     for (int intento = 1; intento <= 3; intento++) {
         if (sensor.begin(nuevaDir, false, &Wire)) {
-            Serial.printf("[ToF] %s: OK en 0x%02X (intento %d)\n",
-                          nombre, nuevaDir, intento);
+            dualPrintf("[ToF] %s: OK en 0x%02X (intento %d)\n",
+                       nombre, nuevaDir, intento);
             return true;
         }
-        Serial.printf("[ToF] %s: begin() falló (intento %d/3)\n", nombre, intento);
+        dualPrintf("[ToF] %s: begin() falló (intento %d/3)\n", nombre, intento);
         delay(100);
     }
 
-    Serial.printf("[ToF] %s: ERROR — no se pudo inicializar\n", nombre);
+    dualPrintf("[ToF] %s: ERROR — no se pudo inicializar\n", nombre);
     return false;
 }
 
 bool inicializarSensoresToF() {
-    Serial.println("[ToF] Inicializando sensores VL53L0X...");
+    dualPrintln("[ToF] Inicializando sensores VL53L0X...");
 
     // 1. Apagar todos los sensores (XSHUT LOW)
     pinMode(PIN_TOF_FRONT_XSHUT, OUTPUT);
@@ -84,7 +85,7 @@ bool inicializarSensoresToF() {
                             TOF_ADDR_RIGHT, "Derecha");
 
     int total = (int)frenteOK + (int)izqOK + (int)derOK;
-    Serial.printf("[ToF] %d de 3 sensores activos\n", total);
+    dualPrintf("[ToF] %d de 3 sensores activos\n", total);
     return (total > 0);
 }
 
@@ -123,19 +124,19 @@ LecturasToF leerSensoresToF() {
 }
 
 void imprimirLecturasToF(const LecturasToF& l) {
-    Serial.print("Distancias -> F:");
-    if (l.frenteValida) Serial.printf("%umm", l.frenteMM);
-    else Serial.print("---");
+    dualPrint("Distancias -> F:");
+    if (l.frenteValida) dualPrintf("%umm", l.frenteMM);
+    else dualPrint("---");
 
-    Serial.print(" | I:");
-    if (l.izquierdaValida) Serial.printf("%umm", l.izquierdaMM);
-    else Serial.print("---");
+    dualPrint(" | I:");
+    if (l.izquierdaValida) dualPrintf("%umm", l.izquierdaMM);
+    else dualPrint("---");
 
-    Serial.print(" | D:");
-    if (l.derechaValida) Serial.printf("%umm", l.derechaMM);
-    else Serial.print("---");
+    dualPrint(" | D:");
+    if (l.derechaValida) dualPrintf("%umm", l.derechaMM);
+    else dualPrint("---");
 
-    Serial.println();
+    dualPrintln();
 }
 
 bool detectarOponenteFrente() {

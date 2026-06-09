@@ -1,5 +1,6 @@
 #include "SensorLinea.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include <QTRSensors.h>
 
 static QTRSensors qtr;
@@ -10,7 +11,7 @@ static uint8_t contadorSaturado = 0;
 static int8_t ultimoLadoLinea = -1;  // 0=Q0, 1=Q1, -1=ninguno/ambos
 
 void inicializarSensorLinea() {
-    Serial.println("[Linea] Iniciando QTR-8A...");
+    dualPrintln("[Linea] Iniciando QTR-8A...");
     qtr.setTypeAnalog();
     qtr.setSensorPins(pinesQTR, QTR_NUM_CANALES);
 
@@ -26,13 +27,13 @@ void inicializarSensorLinea() {
 
     if (lecturasSaturadas >= 4) {
         lineaActiva = false;
-        Serial.printf("[Linea] QTR DESHABILITADO — lecturas saturadas (Q0=%u Q1=%u)\n",
-                      valoresSensor[0], valoresSensor[1]);
-        Serial.println("[Linea] Sensor no conectado o superficie muy reflectiva");
+        dualPrintf("[Linea] QTR DESHABILITADO — lecturas saturadas (Q0=%u Q1=%u)\n",
+                  valoresSensor[0], valoresSensor[1]);
+        dualPrintln("[Linea] Sensor no conectado o superficie muy reflectiva");
     } else {
         lineaActiva = true;
-        Serial.printf("[Linea] QTR OK (%d canales en VP=%d, VN=%d, umbral=%d)\n",
-                      QTR_NUM_CANALES, PIN_QTR_1, PIN_QTR_2, QTR_UMBRAL_LINEA);
+        dualPrintf("[Linea] QTR OK (%d canales en VP=%d, VN=%d, umbral=%d)\n",
+                  QTR_NUM_CANALES, PIN_QTR_1, PIN_QTR_2, QTR_UMBRAL_LINEA);
     }
 }
 
@@ -51,7 +52,7 @@ bool detectarLineaBlanca() {
         contadorSaturado++;
         if (contadorSaturado >= 20) {
             lineaActiva = false;
-            Serial.println("[Linea] QTR auto-deshabilitado — saturado persistente");
+            dualPrintln("[Linea] QTR auto-deshabilitado — saturado persistente");
         }
         return false;
     }

@@ -1,6 +1,7 @@
 #include "Odometria.h"
 #include "SensorIMU.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include <math.h>
 
 static const float DISTANCIA_POR_PULSO =
@@ -32,9 +33,9 @@ void inicializarOdometria() {
     pinMode(PIN_ENCODER_DER_B, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_IZQ_A), contarPulsoIzq, RISING);
     attachInterrupt(digitalPinToInterrupt(PIN_ENCODER_DER_A), contarPulsoDer, RISING);
-    Serial.printf("[Odometria] Inicializada (IZQ: A=%d B=%d, DER: A=%d B=%d)\n",
-                  PIN_ENCODER_IZQ_A, PIN_ENCODER_IZQ_B,
-                  PIN_ENCODER_DER_A, PIN_ENCODER_DER_B);
+    dualPrintf("[Odometria] Inicializada (IZQ: A=%d B=%d, DER: A=%d B=%d)\n",
+              PIN_ENCODER_IZQ_A, PIN_ENCODER_IZQ_B,
+              PIN_ENCODER_DER_A, PIN_ENCODER_DER_B);
 }
 
 void actualizarPosicion() {
