@@ -2,6 +2,9 @@
 #include "Config.h"
 #include <Arduino.h>
 
+static const unsigned long MOTOR_WATCHDOG_MS = 250;
+static unsigned long ultimoComandoMotor = 0;
+
 void inicializarMotores() {
     ledcSetup(PWM_CH_M1_R, PWM_FREQ, PWM_RESOLUCION);
     ledcAttachPin(PIN_M1_R_PWM, PWM_CH_M1_R);
@@ -19,7 +22,15 @@ void inicializarMotores() {
     Serial.println("[Motores] Inicializados");
 }
 
+void verificarWatchdogMotores() {
+    if (ultimoComandoMotor > 0 &&
+        (millis() - ultimoComandoMotor > MOTOR_WATCHDOG_MS)) {
+        detenerRobot();
+    }
+}
+
 void moverMotores(int velocidadIzquierda, int velocidadDerecha) {
+    ultimoComandoMotor = millis();
     velocidadIzquierda = constrain(velocidadIzquierda, -255, 255);
     velocidadDerecha   = constrain(velocidadDerecha,   -255, 255);
 
