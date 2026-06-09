@@ -16,6 +16,7 @@
 // ============================================================================
 
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 #include "BluetoothSerial.h"
 #include "Config.h"
 #include "BusI2C.h"
@@ -97,6 +98,11 @@ void setup() {
     inicializarEstrategia();
     Serial.println();
 
+    // --- Paso 10: Watchdog ---
+    esp_task_wdt_init(3, true);  // 3 segundos, reinicia si se cuelga
+    esp_task_wdt_add(NULL);      // registrar tarea principal
+    Serial.println("[WDT] Watchdog activo (3s)");
+
     Serial.println("==============================================");
     Serial.println("  Sistema listo — entrando al loop principal");
     Serial.println("==============================================");
@@ -106,6 +112,12 @@ void setup() {
 static unsigned long ultimoDiag = 0;
 
 void loop() {
+    // 0. Alimentar watchdog — si el loop se cuelga, ESP32 reinicia
+    esp_task_wdt_reset();
+
+    // 0b. Verificar watchdog de motores — si no se actualizan, parar
+    verificarWatchdogMotores();
+
     // 1. Leer sensores ToF
     LecturasToF lecturas = leerSensoresToF();
 
