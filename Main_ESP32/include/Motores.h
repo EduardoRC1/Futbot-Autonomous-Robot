@@ -8,6 +8,7 @@
 void inicializarMotores();
 void moverMotores(int velocidadIzquierda, int velocidadDerecha);
 void detenerRobot();
+void verificarWatchdogMotores();
 void pivotearDerecha(int velocidad);
 void pivotearIzquierda(int velocidad);
 
