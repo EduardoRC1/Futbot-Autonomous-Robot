@@ -3,6 +3,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+#include <string.h>
+#include <math.h>
 #include "ProtocoloEspNow.h"
 
 MensajeVision datosSalida;
@@ -14,7 +16,41 @@ MensajeVision datosSalida;
 int rMin = 130, rMax = 255;
 int gMin = 40,  gMax = 130;
 int bMin = 0,   bMax = 60;
-static const int UMBRAL_PIXELES_BALON = 50;
+
+// ===========================================================================
+//  RESOLUCIÓN DE LA CÁMARA  (CAMBIAR AQUÍ)
+//  - VGA (640x480) ve MÁS LEJOS (4x más píxeles sobre un balón lejano), pero
+//    baja los FPS y usa más memoria (requiere PSRAM, la AI-Thinker la tiene).
+//  - QVGA (320x240) es más rápida. Si notas el robot lento/laggy, vuelve a QVGA
+//    comentando la línea USAR_VGA.
+//  IMPORTANTE: si cambias esto, actualiza CAM_CENTRO_X en Config.h del cerebro
+//  (VGA -> 320, QVGA -> 160), porque la estrategia centra el balón con ese valor.
+// ===========================================================================
+#define USAR_VGA   // <- comenta esta línea para volver a QVGA
+
+#ifdef USAR_VGA
+  #define FRAME_SIZE_CAM            FRAMESIZE_VGA
+  static const float CONST_DISTANCIA_BLOB = 8000.0f; // calibrar en cancha
+  static const float TAM_BLOB_MIN_PX      = 8.0f;
+#else
+  #define FRAME_SIZE_CAM            FRAMESIZE_QVGA
+  static const float CONST_DISTANCIA_BLOB = 4000.0f; // calibrar en cancha
+  static const float TAM_BLOB_MIN_PX      = 4.0f;
+#endif
+
+// Muestreo: procesamos 1 de cada PASO_MUESTREO píxeles para optimizar.
+static const int PASO_MUESTREO = 4;
+
+// Mínimo de muestras de color "balón" para confirmar detección. Controla el
+// ALCANCE junto con la resolución (NO los rangos de color rMin/gMin/...).
+// Súbelo si hay falsos positivos; bájalo para ver más lejos.
+static const int UMBRAL_PIXELES_BALON = 20;
+
+// Rejilla para localizar el balón y RECHAZAR ruido disperso (píxeles naranjas
+// sueltos lejos del balón). El balón es el grupo más denso de la rejilla.
+static const int REJILLA_COLS = 16;
+static const int REJILLA_FILS = 12;
+static const int REJILLA_VENTANA = 3; // celdas alrededor del pico que se aceptan
 
 static bool camaraOK  = false;
 static bool espnowOK  = false;
@@ -51,7 +87,7 @@ void setup() {
   config.pin_sscb_sda = 26; config.pin_sscb_scl = 27; config.pin_pwdn = 32;
   config.pin_reset = -1; config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_RGB565;
-  config.frame_size = FRAMESIZE_QVGA;
+  config.frame_size = FRAME_SIZE_CAM;
   config.fb_count = 1;
 
   esp_err_t err = esp_camera_init(&config);
@@ -104,32 +140,85 @@ void loop() {
     return;
   }
 
-  int pixelesEncontrados = 0;
-  long sumaX = 0, sumaY = 0;
+  const int W = fb->width;
+  const int H = fb->height;
 
-  // Saltamos pixeles de 4 en 4 para optimizar
-  for (int i = 0; i < (fb->width * fb->height); i += 4) {
+  // --- PASO 1: histograma grueso de muestras naranjas en una rejilla ---
+  // El balón es el grupo MÁS DENSO; el ruido son píxeles sueltos repartidos.
+  int hist[REJILLA_FILS][REJILLA_COLS];
+  memset(hist, 0, sizeof(hist));
 
+  for (int i = 0; i < (W * H); i += PASO_MUESTREO) {
     uint8_t highByte = fb->buf[i * 2];
     uint8_t lowByte  = fb->buf[i * 2 + 1];
-
-    // Extraccion RGB565 a escala 0-255
     uint8_t r = highByte & 0xF8;
     uint8_t g = ((highByte & 0x07) << 5) | ((lowByte & 0xE0) >> 3);
     uint8_t b = (lowByte & 0x1F) << 3;
-
     if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
-      sumaX += (i % fb->width);
-      sumaY += (i / fb->width);
-      pixelesEncontrados++;
+      int cc = (i % W) * REJILLA_COLS / W;
+      int cr = (i / W) * REJILLA_FILS / H;
+      hist[cr][cc]++;
     }
   }
 
-  if (pixelesEncontrados > UMBRAL_PIXELES_BALON) {
+  // Celda con más muestras = centro aproximado del balón
+  int pico = 0, picoFil = 0, picoCol = 0;
+  for (int cr = 0; cr < REJILLA_FILS; cr++)
+    for (int cc = 0; cc < REJILLA_COLS; cc++)
+      if (hist[cr][cc] > pico) { pico = hist[cr][cc]; picoFil = cr; picoCol = cc; }
+
+  int pixelesEncontrados = 0;
+  long sumaX = 0, sumaY = 0;
+  long long sumaX2 = 0, sumaY2 = 0;
+  float tamanoBlob = 0.0f;
+
+  if (pico >= 2) {
+    // Solo aceptamos celdas densas y cercanas al pico (rechaza ruido lejano)
+    int umbralCelda = pico / 4; if (umbralCelda < 2) umbralCelda = 2;
+
+    // --- PASO 2: centroide y dispersión SOLO en la zona del balón ---
+    for (int i = 0; i < (W * H); i += PASO_MUESTREO) {
+      uint8_t highByte = fb->buf[i * 2];
+      uint8_t lowByte  = fb->buf[i * 2 + 1];
+      uint8_t r = highByte & 0xF8;
+      uint8_t g = ((highByte & 0x07) << 5) | ((lowByte & 0xE0) >> 3);
+      uint8_t b = (lowByte & 0x1F) << 3;
+      if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
+        int x = i % W, y = i / W;
+        int cc = x * REJILLA_COLS / W;
+        int cr = y * REJILLA_FILS / H;
+        int dcc = cc - picoCol; if (dcc < 0) dcc = -dcc;
+        int dcr = cr - picoFil; if (dcr < 0) dcr = -dcr;
+        if (dcc <= REJILLA_VENTANA && dcr <= REJILLA_VENTANA &&
+            hist[cr][cc] >= umbralCelda) {
+          sumaX += x; sumaY += y;
+          sumaX2 += (long long)x * x;
+          sumaY2 += (long long)y * y;
+          pixelesEncontrados++;
+        }
+      }
+    }
+
+    if (pixelesEncontrados > 0) {
+      float cx = (float)sumaX / pixelesEncontrados;
+      float cy = (float)sumaY / pixelesEncontrados;
+      float varX = (float)sumaX2 / pixelesEncontrados - cx * cx;
+      float varY = (float)sumaY2 / pixelesEncontrados - cy * cy;
+      if (varX < 0) varX = 0;
+      if (varY < 0) varY = 0;
+      // Para un disco lleno, diámetro aparente ~= 4*desviación estándar.
+      tamanoBlob = 2.0f * (sqrtf(varX) + sqrtf(varY));
+    }
+  }
+
+  // Detección: suficientes muestras Y un blob de tamaño mínimo coherente.
+  if (pixelesEncontrados > UMBRAL_PIXELES_BALON && tamanoBlob > TAM_BLOB_MIN_PX) {
     datosSalida.balonDetectado = true;
     datosSalida.coordX = sumaX / pixelesEncontrados;
     datosSalida.coordY = sumaY / pixelesEncontrados;
-    datosSalida.distanciaEstimada = 5000.0 / sqrt(pixelesEncontrados);
+    // Distancia por TAMAÑO APARENTE (geometría), NO por conteo de píxeles:
+    // valor menor = balón más cerca. Calibrar CONST_DISTANCIA_BLOB en cancha.
+    datosSalida.distanciaEstimada = CONST_DISTANCIA_BLOB / tamanoBlob;
   } else {
     datosSalida.balonDetectado = false;
   }
@@ -188,14 +277,14 @@ void loop() {
   if (millis() - ultimoLog > 3000) {
     ultimoLog = millis();
     if (datosSalida.balonDetectado) {
-      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
+      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f blob=%.1f px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
         datosSalida.coordX, datosSalida.coordY,
-        datosSalida.distanciaEstimada, pixelesEncontrados,
+        datosSalida.distanciaEstimada, tamanoBlob, pixelesEncontrados,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
         avgR, avgG, avgB, frameCount);
     } else {
-      Serial.printf("[CAM] Balon no — px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
-        pixelesEncontrados,
+      Serial.printf("[CAM] Balon no — px=%d blob=%.1f Port=%s RGB=%d,%d,%d frames=%lu\n",
+        pixelesEncontrados, tamanoBlob,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
         avgR, avgG, avgB, frameCount);
     }
