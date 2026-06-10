@@ -179,7 +179,7 @@ void ejecutarJugadaActual() {
     }
 
     case INTERCEPTANDO: {
-        float errorX = datosCamara.coordX - 160.0f;
+        float errorX = datosCamara.coordX - CAM_CENTRO_X;
         int ajuste   = calcularVelocidadPID(errorX);
         moverMotores(constrain(200 + ajuste, -255, 255),
                      constrain(200 - ajuste, -255, 255));
@@ -193,7 +193,7 @@ void ejecutarJugadaActual() {
         if (datosCamara.porteriaEnemigaAlineada) {
             moverMotores(255, 255);
         } else {
-            float errorX = datosCamara.coordX - 160.0f;
+            float errorX = datosCamara.coordX - CAM_CENTRO_X;
             if (errorX > 20.0f) {
                 // Balón a la derecha → curvar a la derecha (rápido/lento)
                 moverMotores(255, 120);

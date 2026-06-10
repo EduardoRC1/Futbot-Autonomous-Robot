@@ -96,13 +96,33 @@ static const uint8_t QTR_NUM_CANALES = 2;
 static const uint16_t QTR_UMBRAL_LINEA = 3500;  // Valor 0-4095, ajustar en cancha (subido de 500)
 
 // ---------------------------------------------------------------------------
-// Estrategia — umbral de distancia para DESPEJANDO
-// La cámara calcula distanciaEstimada = 5000/sqrt(px).
-// Con QVGA muestreado 1:4, el mínimo posible es ~36.
-// Valores bajos = balón muy cerca (grande en el frame).
+// Cámara — centro horizontal del frame (ancho / 2)
+// La estrategia centra el balón usando errorX = coordX - CAM_CENTRO_X.
+// DEBE coincidir con la resolución elegida en el firmware de la cámara:
+//   QVGA (320 ancho) -> 160 ;  VGA (640 ancho) -> 320
 // ---------------------------------------------------------------------------
-static const float UMBRAL_DESPEJE      = 150.0f;
-static const float HISTERESIS_DESPEJE  =  10.0f; // Entra a DESPEJANDO en <140, sale en >160
+static const float CAM_CENTRO_X = 320.0f;  // VGA por defecto (USAR_VGA activo)
+
+// ---------------------------------------------------------------------------
+// Estrategia — umbral de distancia para DESPEJANDO
+// La cámara ahora estima la distancia por el TAMAÑO APARENTE del balón:
+//   distanciaEstimada = CONST_DISTANCIA_BLOB / diámetro_px  (MENOR = más cerca).
+// La escala es la MISMA en QVGA y VGA (la K se ajusta por resolución), así que
+// estos umbrales sirven para ambas.
+//
+// Equivalencia aproximada distancia -> diámetro del balón en el frame:
+//   dist ~360 -> diám ~11 px  (lejos, recién detectado)  -> INTERCEPTANDO
+//   dist ~170 -> diám ~24 px  (media cancha)
+//   dist ~110 -> diám ~36 px  (cerca)                     -> DESPEJANDO
+//   dist  ~67 -> diám ~60 px  (muy cerca)
+//
+// PROBLEMA ANTERIOR: la "distancia" se calculaba con el conteo total de píxeles,
+// que casi nunca bajaba del umbral, así que el estado se quedaba "trabado" en
+// INTERCEPTANDO. Con el tamaño del blob la distancia es confiable y DESPEJANDO
+// es alcanzable. AJUSTAR en cancha con el log ("dist=..." y "blob=...").
+// ---------------------------------------------------------------------------
+static const float UMBRAL_DESPEJE      = 140.0f;
+static const float HISTERESIS_DESPEJE  =  30.0f; // Entra a DESPEJANDO en <110, sale en >170
 
 // Duración mínima de evasión de rival (ms)
 static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 200;
