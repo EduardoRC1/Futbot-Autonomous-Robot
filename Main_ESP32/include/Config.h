@@ -31,9 +31,10 @@ static const uint8_t TOF_ADDR_FRONT = 0x30;
 static const uint8_t TOF_ADDR_LEFT  = 0x31;
 static const uint8_t TOF_ADDR_RIGHT = 0x32;
 
-// Umbrales para considerar que un objeto está "cerca" (mm)
-static const uint16_t TOF_UMBRAL_OPONENTE_FRENTE_MM = 50;
-static const uint16_t TOF_UMBRAL_OPONENTE_LATERAL_MM = 50;
+// Umbrales para considerar que un rival está "cerca" (mm). El VL53L0X mide
+// confiable en cm-dm; 50mm era casi tocarlo. 300/250mm da margen para evadir.
+static const uint16_t TOF_UMBRAL_OPONENTE_FRENTE_MM = 300;
+static const uint16_t TOF_UMBRAL_OPONENTE_LATERAL_MM = 250;
 
 // ---------------------------------------------------------------------------
 // Motores (BTS7960) — canales PWM
