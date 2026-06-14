@@ -98,6 +98,8 @@ LecturasToF leerSensoresToF() {
             lecturas.frenteMM    = medida.RangeMilliMeter;
             lecturas.frenteValida = true;
             ultimaLecturaFrente  = medida.RangeMilliMeter;
+        } else {
+            ultimaLecturaFrente = 9999;  // fuera de rango = sin rival (no latch)
         }
     }
 
@@ -107,6 +109,8 @@ LecturasToF leerSensoresToF() {
             lecturas.izquierdaMM    = medida.RangeMilliMeter;
             lecturas.izquierdaValida = true;
             ultimaLecturaIzq        = medida.RangeMilliMeter;
+        } else {
+            ultimaLecturaIzq = 9999;  // fuera de rango = sin rival (no latch)
         }
     }
 
@@ -116,6 +120,8 @@ LecturasToF leerSensoresToF() {
             lecturas.derechaMM    = medida.RangeMilliMeter;
             lecturas.derechaValida = true;
             ultimaLecturaDer      = medida.RangeMilliMeter;
+        } else {
+            ultimaLecturaDer = 9999;  // fuera de rango = sin rival (no latch)
         }
     }
 
