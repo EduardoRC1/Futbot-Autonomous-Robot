@@ -1,7 +1,5 @@
-// ============================================================================
-//  main.cpp — Futbot Autonomous Robot (Defensa)
-//  Universidad de Matamoros
-//
+//  main.cpp
+// -----------------------------------------------
 //  Secuencia de arranque:
 //    1. Serial
 //    2. Bus I2C (escaneo de diagnóstico)
@@ -13,7 +11,7 @@
 //    8. PID
 //    9. Radio ESP-NOW
 //   10. Estrategia
-// ============================================================================
+// -----------------------------------------------
 
 #include <Arduino.h>
 #include <esp_task_wdt.h>
@@ -43,7 +41,7 @@ void setup() {
     SerialBT.begin("Futbot_Monitor");
     delay(300);
 
-    Serial.println("\n===== FUTBOT — Control v2.1 (Robot B) =====");
+    Serial.println("\n Arrancando Eva!");
 
     // --- Paso 1: Bus I2C ---
     if (!inicializarBusI2C()) {
