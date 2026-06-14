@@ -6,8 +6,8 @@
 #include "ControlPID.h"
 #include "Config.h"
 
-static EstadoRobot estadoActual  = ESPERANDO_EN_ZONA;
-static EstadoRobot estadoPrevio  = ESPERANDO_EN_ZONA;
+static EstadoRobot estadoActual  = PATRULLANDO;
+static EstadoRobot estadoPrevio  = PATRULLANDO;
 
 // Estado no-bloqueante para evasión de línea
 static unsigned long tiempoInicioEvasion = 0;
@@ -20,8 +20,8 @@ static unsigned long tiempoInicioEvasionRival = 0;
 static bool          evasionRivalActiva       = false;
 
 void inicializarEstrategia() {
-    estadoActual             = ESPERANDO_EN_ZONA;
-    estadoPrevio             = ESPERANDO_EN_ZONA;
+    estadoActual             = PATRULLANDO;
+    estadoPrevio             = PATRULLANDO;
     evasionActiva            = false;
     faseEvasion              = 0;
     tiempoInicioEvasion      = 0;
@@ -34,7 +34,7 @@ EstadoRobot obtenerEstadoActual() { return estadoActual; }
 
 const char* nombreEstado(EstadoRobot estado) {
     switch (estado) {
-        case ESPERANDO_EN_ZONA:  return "ESPERANDO";
+        case PATRULLANDO:        return "PATRULLANDO";
         case INTERCEPTANDO:      return "INTERCEPTANDO";
         case DESPEJANDO:         return "DESPEJANDO";
         case EVADIENDO_LINEA:    return "EVAD_LINEA";
@@ -99,7 +99,7 @@ void evaluarEntorno() {
                 estadoActual = INTERCEPTANDO;
         }
     } else {
-        estadoActual = ESPERANDO_EN_ZONA;
+        estadoActual = PATRULLANDO;
     }
 }
 
@@ -139,7 +139,7 @@ void ejecutarJugadaActual() {
             if (ahora - tiempoInicioEvasion >= 200) {
                 evasionActiva = false;
                 faseEvasion   = 0;
-                estadoActual  = ESPERANDO_EN_ZONA;
+                estadoActual  = PATRULLANDO;
             }
         }
         break;
@@ -208,8 +208,16 @@ void ejecutarJugadaActual() {
         break;
     }
 
-    case ESPERANDO_EN_ZONA:
-        detenerRobot();
+    case PATRULLANDO: {
+        // Nunca se detiene: avanza en serpentina barriendo su zona. Curva un
+        // lado y luego el otro para escanear; la línea blanca y los rivales lo
+        // mantienen dentro de su mitad de la cancha.
+        bool curvaDerecha = (millis() / PATRULLA_SEMIPERIODO_MS) % 2 == 0;
+        if (curvaDerecha)
+            moverMotores(PATRULLA_VEL_RAPIDA, PATRULLA_VEL_LENTA);
+        else
+            moverMotores(PATRULLA_VEL_LENTA, PATRULLA_VEL_RAPIDA);
         break;
+    }
     }
 }
