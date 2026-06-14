@@ -89,11 +89,14 @@ static const uint8_t BNO055_DIRECCION_I2C = 0x28;  // Sin pin ADR = 0x28
 
 // ---------------------------------------------------------------------------
 // QTR-8A — sensor de línea (2 canales analógicos)
+// El ADC del ESP32 da 0-4095. En el QTR, MÁS reflejo (blanco) = valor MÁS BAJO.
+// La línea blanca se detecta como una caída de QTR_MARGEN_LINEA por debajo
+// de la base del campo (verde), medida por calibración al arranque.
 // ---------------------------------------------------------------------------
 static const uint8_t PIN_QTR_1 = 36;  // VP
 static const uint8_t PIN_QTR_2 = 39;  // VN
 static const uint8_t QTR_NUM_CANALES = 2;
-static const uint16_t QTR_UMBRAL_LINEA = 3500;  // Valor 0-4095, ajustar en cancha (subido de 500)
+static const uint16_t QTR_MARGEN_LINEA = 700;  // Caída mínima vs base para línea
 
 // ---------------------------------------------------------------------------
 // Cámara — centro horizontal del frame (ancho / 2)
@@ -131,5 +134,14 @@ static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 200;
 // Comunicación — timeout de la cámara (ms)
 // ---------------------------------------------------------------------------
 static const unsigned long TIMEOUT_CAMARA_MS = 500;
+
+// ---------------------------------------------------------------------------
+// Patrullaje — el robot nunca se detiene; barre su zona buscando el balón.
+// Avanza en serpentina (curva un lado, luego el otro). La línea blanca y los
+// rivales lo mantienen dentro de su mitad de la cancha.
+// ---------------------------------------------------------------------------
+static const int           PATRULLA_VEL_RAPIDA   = 170;   // rueda exterior
+static const int           PATRULLA_VEL_LENTA    = 90;    // rueda interior
+static const unsigned long PATRULLA_SEMIPERIODO_MS = 1200; // cambio de lado
 
 #endif // CONFIG_H

@@ -41,15 +41,9 @@ static void enviarDual(const char* msg) {
 void setup() {
     Serial.begin(115200);
     SerialBT.begin("Futbot_Monitor");
-    delay(2000);
+    delay(300);
 
-    Serial.println();
-    Serial.println("==============================================");
-    Serial.println("  FUTBOT — Sistema de Control v2.0");
-    Serial.println("  Universidad de Matamoros");
-    Serial.println("==============================================");
-    Serial.println("[BT] Monitor Bluetooth activo: 'Futbot_Monitor'");
-    Serial.println();
+    Serial.println("\n===== FUTBOT — Control v2.1 (Robot B) =====");
 
     // --- Paso 1: Bus I2C ---
     if (!inicializarBusI2C()) {
@@ -98,15 +92,16 @@ void setup() {
     inicializarEstrategia();
     Serial.println();
 
-    // --- Paso 10: Watchdog ---
-    esp_task_wdt_init(3, true);  // 3 segundos, reinicia si se cuelga
-    esp_task_wdt_add(NULL);      // registrar tarea principal
-    Serial.println("[WDT] Watchdog activo (3s)");
+    // --- Paso 10: Watchdog — reinicia el ESP32 si el loop se cuelga >3s ---
+    esp_err_t wdtErr = esp_task_wdt_init(3, true);
+    if (wdtErr == ESP_OK || wdtErr == ESP_ERR_INVALID_STATE) {
+        esp_task_wdt_add(NULL);
+        Serial.println("[WDT] Watchdog activo (3s)");
+    } else {
+        Serial.printf("[WDT] No se pudo activar (err=%d)\n", wdtErr);
+    }
 
-    Serial.println("==============================================");
-    Serial.println("  Sistema listo — entrando al loop principal");
-    Serial.println("==============================================");
-    Serial.println();
+    Serial.println("===== Listo — loop principal =====\n");
 }
 
 static unsigned long ultimoDiag = 0;

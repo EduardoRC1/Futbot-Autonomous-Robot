@@ -8,7 +8,7 @@
 #include <Arduino.h>
 
 enum EstadoRobot {
-    ESPERANDO_EN_ZONA,
+    PATRULLANDO,        // Sin balón: se mueve barriendo su zona (nunca se detiene)
     INTERCEPTANDO,
     DESPEJANDO,
     EVADIENDO_LINEA,
