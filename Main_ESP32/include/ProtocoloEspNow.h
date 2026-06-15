@@ -21,12 +21,15 @@ typedef struct MensajeVision {
     bool  porteriaEnemigaAlineada;
 } MensajeVision;
 
+
+// Codigo muerto
 #ifdef ROBOT_A
   const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x86, 0xE8};
   const uint8_t direccionMacCamara[]  = {0x88, 0x57, 0x21, 0xC2, 0x0B, 0x68};
 #elif defined(ROBOT_B)
   const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x5E, 0xF8};
   const uint8_t direccionMacCamara[]  = {0x8C, 0x94, 0xDF, 0x72, 0xA4, 0xE0};
+// Codigo Muerto
 #elif defined(ROBOT_HOTFIX)
   // Cerebro B (hardware) + Cámara A (hardware)
   const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x5E, 0xF8};  // MAC real del Cerebro B
