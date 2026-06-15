@@ -8,8 +8,11 @@
 #include <Arduino.h>
 
 // Selector de robot — descomentar UNA línea antes de compilar
+// ------ Codigo muerto -------------//
 //#define ROBOT_A
 //#define ROBOT_B
+//-------Codigo muerto ---------//
+
 //#define ROBOT_HOTFIX     // Cerebro B + Cámara A (ESP32-A murió)
 #define ROBOT_HOTFIX2    // Cerebro A (nueva) + Cámara B
 
