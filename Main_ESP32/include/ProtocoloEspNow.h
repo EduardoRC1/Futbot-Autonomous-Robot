@@ -10,7 +10,8 @@
 // Selector de robot — descomentar UNA línea antes de compilar
 //#define ROBOT_A
 //#define ROBOT_B
-#define ROBOT_HOTFIX    // Cerebro B + Cámara A (ESP32-A murió)
+//#define ROBOT_HOTFIX     // Cerebro B + Cámara A (ESP32-A murió)
+#define ROBOT_HOTFIX2    // Cerebro A (nueva) + Cámara B
 
 typedef struct MensajeVision {
     bool  balonDetectado;
@@ -30,8 +31,12 @@ typedef struct MensajeVision {
   // Cerebro B (hardware) + Cámara A (hardware)
   const uint8_t direccionMacCerebro[] = {0xB0, 0xCB, 0xD8, 0x0F, 0x5E, 0xF8};  // MAC real del Cerebro B
   const uint8_t direccionMacCamara[]  = {0x88, 0x57, 0x21, 0xC2, 0x0B, 0x68};  // MAC real de Cámara A
+#elif defined(ROBOT_HOTFIX2)
+  // Cerebro A (hardware nuevo) + Cámara B (hardware)
+  const uint8_t direccionMacCerebro[] = {0x68, 0x09, 0x47, 0x47, 0x27, 0xA0};  // MAC real del Cerebro A (nuevo)
+  const uint8_t direccionMacCamara[]  = {0x8C, 0x94, 0xDF, 0x72, 0xA4, 0xE0};  // MAC real de Cámara B
 #else
-  #error "Definir ROBOT_A, ROBOT_B o ROBOT_HOTFIX en ProtocoloEspNow.h"
+  #error "Definir ROBOT_A, ROBOT_B, ROBOT_HOTFIX o ROBOT_HOTFIX2 en ProtocoloEspNow.h"
 #endif
 
 #endif // PROTOCOLO_ESPNOW_H
