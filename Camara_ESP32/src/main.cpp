@@ -17,6 +17,18 @@ int rMin = 130, rMax = 255;
 int gMin = 40,  gMax = 130;
 int bMin = 0,   bMax = 60;
 
+// Gate anti-falsos-positivos: el naranja real tiene R dominante sobre G y muy
+// por encima de B. Los grises/blancos/cafés tienen R~=G~=B y NO pasan esto,
+// aunque caigan dentro de la caja RGB de arriba.
+int NARANJA_R_SOBRE_G = 20;  // r debe superar a g por al menos esto
+int NARANJA_R_SOBRE_B = 60;  // r debe superar a b por al menos esto
+
+static inline bool esColorBalon(uint8_t r, uint8_t g, uint8_t b) {
+  return r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax &&
+         (int)r - (int)g >= NARANJA_R_SOBRE_G &&
+         (int)r - (int)b >= NARANJA_R_SOBRE_B;
+}
+
 // ===========================================================================
 //  RESOLUCIÓN DE LA CÁMARA  (CAMBIAR AQUÍ)
 //  - VGA (640x480) ve MÁS LEJOS (4x más píxeles sobre un balón lejano), pero
@@ -154,7 +166,7 @@ void loop() {
     uint8_t r = highByte & 0xF8;
     uint8_t g = ((highByte & 0x07) << 5) | ((lowByte & 0xE0) >> 3);
     uint8_t b = (lowByte & 0x1F) << 3;
-    if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
+    if (esColorBalon(r, g, b)) {
       int cc = (i % W) * REJILLA_COLS / W;
       int cr = (i / W) * REJILLA_FILS / H;
       hist[cr][cc]++;
@@ -170,6 +182,7 @@ void loop() {
   int pixelesEncontrados = 0;
   long sumaX = 0, sumaY = 0;
   long long sumaX2 = 0, sumaY2 = 0;
+  long blobR = 0, blobG = 0, blobB = 0;
   float tamanoBlob = 0.0f;
 
   if (pico >= 2) {
@@ -183,7 +196,7 @@ void loop() {
       uint8_t r = highByte & 0xF8;
       uint8_t g = ((highByte & 0x07) << 5) | ((lowByte & 0xE0) >> 3);
       uint8_t b = (lowByte & 0x1F) << 3;
-      if (r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax) {
+      if (esColorBalon(r, g, b)) {
         int x = i % W, y = i / W;
         int cc = x * REJILLA_COLS / W;
         int cr = y * REJILLA_FILS / H;
@@ -194,6 +207,7 @@ void loop() {
           sumaX += x; sumaY += y;
           sumaX2 += (long long)x * x;
           sumaY2 += (long long)y * y;
+          blobR += r; blobG += g; blobB += b;
           pixelesEncontrados++;
         }
       }
@@ -222,6 +236,12 @@ void loop() {
   } else {
     datosSalida.balonDetectado = false;
   }
+
+  // Color promedio REAL del blob detectado (lo que disparó la detección).
+  // Sirve para calibrar: si en un falso positivo no es naranja, ajustar rangos.
+  uint8_t blobAvgR = pixelesEncontrados ? blobR / pixelesEncontrados : 0;
+  uint8_t blobAvgG = pixelesEncontrados ? blobG / pixelesEncontrados : 0;
+  uint8_t blobAvgB = pixelesEncontrados ? blobB / pixelesEncontrados : 0;
 
   // --- Deteccion de porteria enemiga ---
   // Buscar pixeles blancos/brillantes en la zona central-superior del frame.
@@ -277,11 +297,11 @@ void loop() {
   if (millis() - ultimoLog > 3000) {
     ultimoLog = millis();
     if (datosSalida.balonDetectado) {
-      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f blob=%.1f px=%d Port=%s RGB=%d,%d,%d frames=%lu\n",
+      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f blob=%.1f px=%d Port=%s blobRGB=%d,%d,%d frames=%lu\n",
         datosSalida.coordX, datosSalida.coordY,
         datosSalida.distanciaEstimada, tamanoBlob, pixelesEncontrados,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
-        avgR, avgG, avgB, frameCount);
+        blobAvgR, blobAvgG, blobAvgB, frameCount);
     } else {
       Serial.printf("[CAM] Balon no — px=%d blob=%.1f Port=%s RGB=%d,%d,%d frames=%lu\n",
         pixelesEncontrados, tamanoBlob,
