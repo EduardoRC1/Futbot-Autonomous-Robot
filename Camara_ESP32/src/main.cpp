@@ -31,7 +31,7 @@ int bMin = 0,   bMax = 60;
 #ifdef USAR_VGA
   #define FRAME_SIZE_CAM            FRAMESIZE_VGA
   static const float CONST_DISTANCIA_BLOB = 8000.0f; // calibrar en cancha
-  static const float TAM_BLOB_MIN_PX      = 8.0f;
+  static const float TAM_BLOB_MIN_PX      = 5.0f;
 #else
   #define FRAME_SIZE_CAM            FRAMESIZE_QVGA
   static const float CONST_DISTANCIA_BLOB = 4000.0f; // calibrar en cancha
@@ -39,12 +39,12 @@ int bMin = 0,   bMax = 60;
 #endif
 
 // Muestreo: procesamos 1 de cada PASO_MUESTREO píxeles para optimizar.
-static const int PASO_MUESTREO = 4;
+static const int PASO_MUESTREO = 2;
 
 // Mínimo de muestras de color "balón" para confirmar detección. Controla el
 // ALCANCE junto con la resolución (NO los rangos de color rMin/gMin/...).
 // Súbelo si hay falsos positivos; bájalo para ver más lejos.
-static const int UMBRAL_PIXELES_BALON = 20;
+static const int UMBRAL_PIXELES_BALON = 10;
 
 // Rejilla para localizar el balón y RECHAZAR ruido disperso (píxeles naranjas
 // sueltos lejos del balón). El balón es el grupo más denso de la rejilla.
