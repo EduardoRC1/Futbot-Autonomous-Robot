@@ -7,8 +7,8 @@
 // =========================================================================
 //#define ROBOT_A // <- Quita las barras (//) para programar la Camara del Robot A
 //#define ROBOT_B   // <- Deja esto asi para programar la Camara del Robot B
-//#define ROBOT_HOTFIX  // Cerebro B + Cámara A (ESP32-A murió)
-#define ROBOT_HOTFIX2 // Cerebro A (nueva) + Cámara B
+#define ROBOT_HOTFIX  // Cerebro B + Cámara A (ESP32-A murió)
+//#define ROBOT_HOTFIX2 // Cerebro A (nueva) + Cámara B
 
 // =========================================================================
 // 2. LA ESTRUCTURA DE DATOS (Universal para ambos robots)
