@@ -14,13 +14,14 @@ MensajeVision datosSalida;
 // o falsos negativos (no detecta el balón). El log de diagnóstico imprime
 // los valores RGB promedio del centro del frame para ayudar a calibrar.
 int rMin = 130, rMax = 255;
-int gMin = 40,  gMax = 130;
+int gMin = 40,  gMax = 90;
 int bMin = 0,   bMax = 60;
 
 // Gate anti-falsos-positivos: el naranja real tiene R dominante sobre G y muy
-// por encima de B. Los grises/blancos/cafés tienen R~=G~=B y NO pasan esto,
-// aunque caigan dentro de la caja RGB de arriba.
-int NARANJA_R_SOBRE_G = 20;  // r debe superar a g por al menos esto
+// por encima de B. Los cafés/tan/piel tienen el verde alto y R~G (ej. 140,102,53),
+// así que NO pasan esto aunque caigan en la caja. Calibrado con datos reales:
+// balón real ~172,64,38 (R-G=108); falsos ~136,94,52 / 140,102,53 (R-G=42/38).
+int NARANJA_R_SOBRE_G = 55;  // r debe superar a g por al menos esto
 int NARANJA_R_SOBRE_B = 60;  // r debe superar a b por al menos esto
 
 static inline bool esColorBalon(uint8_t r, uint8_t g, uint8_t b) {
