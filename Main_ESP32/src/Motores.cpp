@@ -31,6 +31,15 @@ void verificarWatchdogMotores() {
 
 void moverMotores(int velocidadIzquierda, int velocidadDerecha) {
     ultimoComandoMotor = millis();
+
+    if (INTERCAMBIAR_MOTORES) {
+        int tmp = velocidadIzquierda;
+        velocidadIzquierda = velocidadDerecha;
+        velocidadDerecha = tmp;
+    }
+    if (INVERTIR_MOTOR_IZQ) velocidadIzquierda = -velocidadIzquierda;
+    if (INVERTIR_MOTOR_DER) velocidadDerecha   = -velocidadDerecha;
+
     velocidadIzquierda = constrain(velocidadIzquierda, -255, 255);
     velocidadDerecha   = constrain(velocidadDerecha,   -255, 255);
 

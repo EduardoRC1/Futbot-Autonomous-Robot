@@ -71,6 +71,9 @@ void setup() {
 
     // --- Paso 5: Motores ---
     inicializarMotores();
+    if (INVERTIR_MOTOR_IZQ || INVERTIR_MOTOR_DER || INTERCAMBIAR_MOTORES)
+        Serial.printf("[Motores] Inv I=%d D=%d | Swap=%d\n",
+                      INVERTIR_MOTOR_IZQ, INVERTIR_MOTOR_DER, INTERCAMBIAR_MOTORES);
     Serial.println();
 
     // --- Paso 6: Odometría ---

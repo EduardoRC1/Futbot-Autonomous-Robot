@@ -120,23 +120,19 @@ void ejecutarJugadaActual() {
             tiempoInicioEvasion = ahora;
         }
         if (faseEvasion == 0) {
-            // Fase 0: retroceder
             moverMotores(-255, -255);
-            if (ahora - tiempoInicioEvasion >= 300) {
+            if (ahora - tiempoInicioEvasion >= EVASION_LINEA_RETRO_MS) {
                 faseEvasion         = 1;
                 tiempoInicioEvasion = ahora;
             }
         } else {
-            // Fase 1: girar HACIA EL LADO OPUESTO de donde se detectó la línea.
-            // Q0 (VP) = sensor izquierdo → girar a la derecha (200, -200)
-            // Q1 (VN) = sensor derecho  → girar a la izquierda (-200, 200)
-            // Ambos o desconocido → girar a la derecha (default)
+            // Pivot brusco al lado opuesto de la línea detectada
             if (ladoLineaDetectado == 1) {
-                moverMotores(-200, 200);   // girar izquierda
+                moverMotores(-EVASION_LINEA_VEL, EVASION_LINEA_VEL);
             } else {
-                moverMotores(200, -200);   // girar derecha (default / Q0 / ambos)
+                moverMotores(EVASION_LINEA_VEL, -EVASION_LINEA_VEL);
             }
-            if (ahora - tiempoInicioEvasion >= 200) {
+            if (ahora - tiempoInicioEvasion >= EVASION_LINEA_GIRO_MS) {
                 evasionActiva = false;
                 faseEvasion   = 0;
                 estadoActual  = PATRULLANDO;
