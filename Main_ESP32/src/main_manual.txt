@@ -1,0 +1,93 @@
+// main.cpp — Manual Bluetooth Control Mode
+// Commands from "Serial Bluetooth Terminal" or similar app:
+//   F = Forward    B = Back      S = Stop
+//   L = Pivot Left R = Pivot Right
+//   1-9 = Set speed (1=slow, 9=max)
+//   Q = Smooth left  E = Smooth right
+
+#include <Arduino.h>
+#include <esp_task_wdt.h>
+#include "BluetoothSerial.h"
+#include "Config.h"
+#include "Motores.h"
+
+BluetoothSerial SerialBT;
+
+static int velocidad = 200; // Default speed (adjustable 1-9)
+
+void setup() {
+  Serial.begin(115200);
+  SerialBT.begin("Futbot_Manual");
+  delay(300);
+
+  Serial.println("\n=== Modo Manual Bluetooth ===");
+  SerialBT.println("Futbot conectado! Comandos: F B L R S Q E (1-9 vel)");
+
+  // Motors only — no sensors, no radio, no strategy
+  inicializarMotores();
+
+  // Watchdog — reinicia si el loop se cuelga
+  esp_task_wdt_init(3, true);
+  esp_task_wdt_add(NULL);
+
+  Serial.println("Listo — esperando comandos BT...\n");
+}
+
+void loop() {
+  esp_task_wdt_reset();
+
+  if (SerialBT.available()) {
+    char cmd = SerialBT.read();
+
+    switch (cmd) {
+      case 'F': case 'f':
+        moverMotores(velocidad, velocidad);
+        SerialBT.printf(">> Avance (%d)\n", velocidad);
+        break;
+
+      case 'B': case 'b':
+        moverMotores(-velocidad, -velocidad);
+        SerialBT.printf(">> Reversa (%d)\n", velocidad);
+        break;
+
+      case 'L': case 'l':
+        moverMotores(-velocidad, velocidad);
+        SerialBT.println(">> Pivote izquierda");
+        break;
+
+      case 'R': case 'r':
+        moverMotores(velocidad, -velocidad);
+        SerialBT.println(">> Pivote derecha");
+        break;
+
+      case 'Q': case 'q':
+        moverMotores(0, velocidad);
+        SerialBT.println(">> Curva izquierda");
+        break;
+
+      case 'E': case 'e':
+        moverMotores(velocidad, 0);
+        SerialBT.println(">> Curva derecha");
+        break;
+
+      case 'S': case 's':
+        detenerRobot();
+        SerialBT.println(">> Stop");
+        break;
+
+      case '1': case '2': case '3': case '4': case '5':
+      case '6': case '7': case '8': case '9':
+        velocidad = map(cmd - '0', 1, 9, 80, 255);
+        SerialBT.printf(">> Velocidad: %d/255\n", velocidad);
+        break;
+
+      default:
+        break; // Ignore newlines, etc.
+    }
+  }
+
+  // Auto-stop if no command received in 250ms
+  verificarWatchdogMotores();
+
+  delay(20);
+}
