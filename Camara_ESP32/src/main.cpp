@@ -13,9 +13,13 @@ MensajeVision datosSalida;
 // Ajustar estos valores si hay falsos positivos (detecta cosas que no son balón)
 // o falsos negativos (no detecta el balón). El log de diagnóstico imprime
 // los valores RGB promedio del centro del frame para ayudar a calibrar.
-int rMin = 130, rMax = 255;
-int gMin = 40,  gMax = 90;
-int bMin = 0,   bMax = 60;
+// La caja RGB es tolerante a la luz (el balón se ve más claro/oscuro según el
+// ambiente); el rechazo de café/tan lo hacen los GATES de ratio de abajo, que
+// son invariantes a la iluminación. Así el balón se detecta igual en el salón
+// de pruebas que bajo la luz del torneo, sin reintroducir falsos positivos.
+int rMin = 115, rMax = 255;
+int gMin = 40,  gMax = 105;
+int bMin = 0,   bMax = 70;
 
 // Gate anti-falsos-positivos: el naranja real tiene R dominante sobre G y muy
 // por encima de B. Los cafés/tan/piel tienen el verde alto y R~G (ej. 140,102,53),
