@@ -1,30 +1,38 @@
 #include "SensorLinea.h"
 #include "Config.h"
-#include <QTRSensors.h>
+#include <Arduino.h>
 
-static QTRSensors qtr;
 static uint16_t valoresSensor[QTR_NUM_CANALES] = { 0 };
 static const uint8_t pinesQTR[QTR_NUM_CANALES] = { PIN_QTR_1, PIN_QTR_2 };
-static uint16_t baseCampo[QTR_NUM_CANALES] = { 4095, 4095 };  // valor sobre el verde
-static int8_t ultimoLadoLinea = -1;  // 0=Q0, 1=Q1, -1=ninguno/ambos
+static uint16_t baseCampo[QTR_NUM_CANALES] = { 0, 0 };
+static int8_t ultimoLadoLinea = -1;
+static bool qtrFuncional = false;
+
+static void leerCrudo() {
+    for (uint8_t c = 0; c < QTR_NUM_CANALES; c++)
+        valoresSensor[c] = analogRead(pinesQTR[c]);
+}
 
 void inicializarSensorLinea() {
-    qtr.setTypeAnalog();
-    qtr.setSensorPins(pinesQTR, QTR_NUM_CANALES);
+    analogReadResolution(12);
+    pinMode(PIN_QTR_1, INPUT);
+    pinMode(PIN_QTR_2, INPUT);
 
-    // Calibración: el robot arranca sobre el campo (verde). Promediar varias
-    // lecturas fija la base "sin línea". La línea blanca refleja más IR, así
-    // que su lectura cae muy por debajo de esta base.
     uint32_t acum[QTR_NUM_CANALES] = { 0 };
     for (uint8_t k = 0; k < 10; k++) {
-        qtr.read(valoresSensor);
+        leerCrudo();
         for (uint8_t c = 0; c < QTR_NUM_CANALES; c++) acum[c] += valoresSensor[c];
         delay(5);
     }
     for (uint8_t c = 0; c < QTR_NUM_CANALES; c++) baseCampo[c] = acum[c] / 10;
 
-    Serial.printf("[Linea] QTR OK — base verde Q0=%u Q1=%u (línea si cae %u)\n",
+    qtrFuncional = (baseCampo[0] > 100 || baseCampo[1] > 100);
+
+    Serial.printf("[Linea] QTR base verde Q0=%u Q1=%u (margen=%u)\n",
                   baseCampo[0], baseCampo[1], QTR_MARGEN_LINEA);
+    if (!qtrFuncional)
+        Serial.println("[Linea] *** AVISO: lectura ~0 — QTR no funcional. "
+                       "Revisar: VCC a 3.3V, señal a GPIO36/39, sensor >3mm del piso ***");
 }
 
 uint16_t obtenerValorQTR(uint8_t canal) {
@@ -33,9 +41,10 @@ uint16_t obtenerValorQTR(uint8_t canal) {
 }
 
 bool detectarLineaBlanca() {
-    qtr.read(valoresSensor);
+    leerCrudo();
 
-    // Línea blanca = lectura muy por debajo de la base del campo.
+    if (!qtrFuncional) return false;
+
     bool q0 = (valoresSensor[0] + QTR_MARGEN_LINEA < baseCampo[0]);
     bool q1 = (valoresSensor[1] + QTR_MARGEN_LINEA < baseCampo[1]);
 

@@ -51,6 +51,14 @@ static const int    PWM_CH_M1_L    = 1;
 static const int    PWM_CH_M2_R    = 2;
 static const int    PWM_CH_M2_L    = 3;
 
+// Corrección de cableado por robot — cambiar a true si un motor gira al revés.
+// Eva (HOTFIX2): si "retroceder" va hacia adelante, pon ambos en true.
+// Wall-E (HOTFIX): normalmente false.
+static const bool INVERTIR_MOTOR_IZQ   = false;
+static const bool INVERTIR_MOTOR_DER   = false;
+// true si M1 (código: izquierdo) está conectado físicamente al motor DERECHO
+static const bool INTERCAMBIAR_MOTORES = false;
+
 // ---------------------------------------------------------------------------
 // Encoders (odometría) — según esquemático
 // ---------------------------------------------------------------------------
@@ -129,7 +137,14 @@ static const float UMBRAL_DESPEJE      = 140.0f;
 static const float HISTERESIS_DESPEJE  =  30.0f; // Entra a DESPEJANDO en <110, sale en >170
 
 // Duración mínima de evasión de rival (ms)
-static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 200;
+static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 400;
+
+// ---------------------------------------------------------------------------
+// Evasión de línea — tiempos (ms) y velocidad del giro brusco
+// ---------------------------------------------------------------------------
+static const unsigned long EVASION_LINEA_RETRO_MS = 500;   // retroceso
+static const unsigned long EVASION_LINEA_GIRO_MS  = 450;   // pivot
+static const int           EVASION_LINEA_VEL      = 230;   // velocidad del pivot
 
 // ---------------------------------------------------------------------------
 // Comunicación — timeout de la cámara (ms)
