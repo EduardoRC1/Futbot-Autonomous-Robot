@@ -19,14 +19,17 @@ MensajeVision datosSalida;
 // de pruebas que bajo la luz del torneo, sin reintroducir falsos positivos.
 int rMin = 115, rMax = 255;
 int gMin = 40,  gMax = 105;
-int bMin = 0,   bMax = 70;
+int bMin = 0,   bMax = 60;
 
-// Gate anti-falsos-positivos: el naranja real tiene R dominante sobre G y muy
-// por encima de B. Los cafés/tan/piel tienen el verde alto y R~G (ej. 140,102,53),
-// así que NO pasan esto aunque caigan en la caja. Calibrado con datos reales:
-// balón real ~172,64,38 (R-G=108); falsos ~136,94,52 / 140,102,53 (R-G=42/38).
+// Gate anti-falsos-positivos: el naranja real tiene R dominante sobre G y MUY
+// por encima de B. Calibrado con datos reales de cancha:
+//   balón real  172,64,38  -> R-G=108  R-B=134
+//   café/tan    136,94,52  -> R-G=42           (lo rechaza R_SOBRE_G)
+//   salmón/rojo 137,53,53  -> R-G=84  R-B=84    (lo rechaza R_SOBRE_B: azul alto)
+// El azul (R-B) es el discriminador clave: el balón es naranja profundo (B bajo),
+// los falsos rojizos tienen el azul más alto.
 int NARANJA_R_SOBRE_G = 55;  // r debe superar a g por al menos esto
-int NARANJA_R_SOBRE_B = 60;  // r debe superar a b por al menos esto
+int NARANJA_R_SOBRE_B = 90;  // r debe superar a b por al menos esto (sube el azul = falso)
 
 static inline bool esColorBalon(uint8_t r, uint8_t g, uint8_t b) {
   return r >= rMin && r <= rMax && g >= gMin && g <= gMax && b >= bMin && b <= bMax &&
@@ -189,6 +192,7 @@ void loop() {
   long long sumaX2 = 0, sumaY2 = 0;
   long blobR = 0, blobG = 0, blobB = 0;
   float tamanoBlob = 0.0f;
+  int minX = W, maxX = 0, minY = H, maxY = 0;
 
   if (pico >= 2) {
     // Solo aceptamos celdas densas y cercanas al pico (rechaza ruido lejano)
@@ -213,6 +217,8 @@ void loop() {
           sumaX2 += (long long)x * x;
           sumaY2 += (long long)y * y;
           blobR += r; blobG += g; blobB += b;
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
           pixelesEncontrados++;
         }
       }
@@ -230,8 +236,20 @@ void loop() {
     }
   }
 
-  // Detección: suficientes muestras Y un blob de tamaño mínimo coherente.
-  if (pixelesEncontrados > UMBRAL_PIXELES_BALON && tamanoBlob > TAM_BLOB_MIN_PX) {
+  // Compacidad: un balón real es un disco DENSO (llena ~78% de su caja). Una
+  // mancha roja difusa del ambiente llena mucho menos. Solo se exige en blobs
+  // grandes (>300 px) para no afectar balones lejanos/chicos.
+  float densidad = 1.0f;
+  if (pixelesEncontrados > 0) {
+    long areaCaja = (long)(maxX - minX + 1) * (long)(maxY - minY + 1);
+    if (areaCaja > 0)
+      densidad = (float)(pixelesEncontrados * PASO_MUESTREO) / (float)areaCaja;
+  }
+  bool blobGrande = pixelesEncontrados > 300;
+  bool compacto   = !blobGrande || densidad > 0.25f;
+
+  // Detección: suficientes muestras Y un blob de tamaño mínimo coherente Y compacto.
+  if (pixelesEncontrados > UMBRAL_PIXELES_BALON && tamanoBlob > TAM_BLOB_MIN_PX && compacto) {
     datosSalida.balonDetectado = true;
     datosSalida.coordX = sumaX / pixelesEncontrados;
     datosSalida.coordY = sumaY / pixelesEncontrados;
@@ -302,9 +320,9 @@ void loop() {
   if (millis() - ultimoLog > 3000) {
     ultimoLog = millis();
     if (datosSalida.balonDetectado) {
-      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f blob=%.1f px=%d Port=%s blobRGB=%d,%d,%d frames=%lu\n",
+      Serial.printf("[CAM] BALON SI — x=%d y=%d dist=%.1f blob=%.1f px=%d dens=%.2f Port=%s blobRGB=%d,%d,%d frames=%lu\n",
         datosSalida.coordX, datosSalida.coordY,
-        datosSalida.distanciaEstimada, tamanoBlob, pixelesEncontrados,
+        datosSalida.distanciaEstimada, tamanoBlob, pixelesEncontrados, densidad,
         datosSalida.porteriaEnemigaAlineada ? "SI" : "no",
         blobAvgR, blobAvgG, blobAvgB, frameCount);
     } else {
