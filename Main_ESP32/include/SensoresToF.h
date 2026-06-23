@@ -40,4 +40,9 @@ uint16_t obtenerDistanciaFrente();
 uint16_t obtenerDistanciaIzquierda();
 uint16_t obtenerDistanciaDerecha();
 
+// Estado de inicialización de cada sensor (para resumen de boot).
+bool tofFrenteActivo();
+bool tofIzquierdaActivo();
+bool tofDerechaActivo();
+
 #endif // SENSORES_TOF_H
