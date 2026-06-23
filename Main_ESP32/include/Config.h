@@ -53,8 +53,8 @@ static const int    PWM_CH_M2_L    = 3;
 // Corrección de cableado por robot — cambiar a true si un motor gira al revés.
 // Eva (HOTFIX2): si "retroceder" va hacia adelante, pon ambos en true.
 // Wall-E (HOTFIX): normalmente false.
-static const bool INVERTIR_MOTOR_IZQ   = false;
-static const bool INVERTIR_MOTOR_DER   = false;
+static const bool INVERTIR_MOTOR_IZQ   = true;
+static const bool INVERTIR_MOTOR_DER   = true;
 // true si M1 (código: izquierdo) está conectado físicamente al motor DERECHO
 static const bool INTERCAMBIAR_MOTORES = false;
 
