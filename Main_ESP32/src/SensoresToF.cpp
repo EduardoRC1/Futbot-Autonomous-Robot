@@ -155,3 +155,7 @@ bool detectarOponenteDerecha() {
 uint16_t obtenerDistanciaFrente()     { return ultimaLecturaFrente; }
 uint16_t obtenerDistanciaIzquierda()  { return ultimaLecturaIzq; }
 uint16_t obtenerDistanciaDerecha()    { return ultimaLecturaDer; }
+
+bool tofFrenteActivo()    { return frenteOK; }
+bool tofIzquierdaActivo() { return izqOK; }
+bool tofDerechaActivo()   { return derOK; }

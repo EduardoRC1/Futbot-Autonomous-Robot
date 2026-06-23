@@ -96,7 +96,22 @@ void setup() {
         dualPrintf("[WDT] No se pudo activar (err=%d)\n", wdtErr);
     }
 
-    dualPrintln("===== Listo — loop principal =====\n");
+    dualPrintln("===== Listo — loop principal =====");
+
+    // --- Resumen de boot (visible por BT aunque conecte tarde) ---
+    dualPrintln("========== RESUMEN BOOT ==========");
+    int tofTotal = (int)tofFrenteActivo() + (int)tofIzquierdaActivo() + (int)tofDerechaActivo();
+    dualPrintf("  ToF: %d/3 [F=%s I=%s D=%s]\n",
+        tofTotal,
+        tofFrenteActivo()    ? "OK" : "FALLO",
+        tofIzquierdaActivo() ? "OK" : "FALLO",
+        tofDerechaActivo()   ? "OK" : "FALLO");
+    dualPrintf("  IMU: %s\n", "ver arriba");
+    dualPrintf("  Motores: Inv I=%d D=%d Swap=%d\n",
+        INVERTIR_MOTOR_IZQ, INVERTIR_MOTOR_DER, INTERCAMBIAR_MOTORES);
+    dualPrintln("  Linea: DESACTIVADO");
+    dualPrintln("  Cam: esperando ESP-NOW...");
+    dualPrintln("==================================\n");
 }
 
 static unsigned long ultimoDiag = 0;
