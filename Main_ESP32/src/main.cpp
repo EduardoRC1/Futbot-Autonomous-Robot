@@ -20,7 +20,7 @@
 #include "BusI2C.h"
 #include "SensoresToF.h"
 #include "SensorIMU.h"
-#include "SensorLinea.h"
+// SensorLinea desactivado (modo sumo, sin línea)
 #include "Motores.h"
 #include "Odometria.h"
 #include "ControlPID.h"
@@ -65,8 +65,8 @@ void setup() {
     inicializarIMU();
     Serial.println();
 
-    // --- Paso 4: Sensor de línea ---
-    inicializarSensorLinea();
+    // --- Paso 4: Sensor de línea (DESACTIVADO — modo sumo) ---
+    Serial.println("[Linea] DESACTIVADO (modo sumo)");
     Serial.println();
 
     // --- Paso 5: Motores ---
@@ -140,7 +140,6 @@ void loop() {
         bool opF = detectarOponenteFrente();
         bool opI = detectarOponenteIzquierda();
         bool opD = detectarOponenteDerecha();
-        bool linea = detectarLineaBlanca();
 
         char buffer[256];
         snprintf(buffer, sizeof(buffer),
@@ -150,15 +149,14 @@ void loop() {
         SerialBT.print(buffer);
 
         snprintf(buffer, sizeof(buffer),
-                 "[DIAG] Estado=%s | Oponente F=%s I=%s D=%s | Linea=%s (Q0=%u Q1=%u)"
-                 " | Balon=%s dist=%.0f Port=%s | Cam=%s (msgs=%lu)\n",
+                 "[DIAG] Estado=%s | ToF F=%s(%umm) I=%s(%umm) D=%s(%umm)"
+                 " | Balon=%s dist=%.0f | Cam=%s (msgs=%lu)\n",
                  nombreEstado(obtenerEstadoActual()),
-                 opF ? "SI" : "no", opI ? "SI" : "no", opD ? "SI" : "no",
-                 linea ? "SI" : "no",
-                 obtenerValorQTR(0), obtenerValorQTR(1),
+                 opF ? "SI" : "no", obtenerDistanciaFrente(),
+                 opI ? "SI" : "no", obtenerDistanciaIzquierda(),
+                 opD ? "SI" : "no", obtenerDistanciaDerecha(),
                  datosCamara.balonDetectado ? "SI" : "no",
                  datosCamara.distanciaEstimada,
-                 datosCamara.porteriaEnemigaAlineada ? "SI" : "no",
                  camaraConectada() ? "OK" : "SIN_CONEXION",
                  obtenerContadorMensajes());
         enviarDual(buffer);

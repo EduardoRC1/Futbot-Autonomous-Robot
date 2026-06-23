@@ -31,10 +31,10 @@ static const uint8_t TOF_ADDR_FRONT = 0x30;
 static const uint8_t TOF_ADDR_LEFT  = 0x31;
 static const uint8_t TOF_ADDR_RIGHT = 0x32;
 
-// Umbrales para considerar que un rival está "cerca" (mm). El VL53L0X mide
-// confiable en cm-dm; 50mm era casi tocarlo. 300/250mm da margen para evadir.
-static const uint16_t TOF_UMBRAL_OPONENTE_FRENTE_MM = 300;
-static const uint16_t TOF_UMBRAL_OPONENTE_LATERAL_MM = 250;
+// Umbrales de detección ToF (mm). Modo ataque: detectar rival y embestir.
+// Rango máximo útil del VL53L0X ~1200mm. 500/400mm da buen alcance de ataque.
+static const uint16_t TOF_UMBRAL_OPONENTE_FRENTE_MM = 500;
+static const uint16_t TOF_UMBRAL_OPONENTE_LATERAL_MM = 400;
 
 // ---------------------------------------------------------------------------
 // Motores (BTS7960) — canales PWM
@@ -97,15 +97,12 @@ static const float PID_LIMITE_INTEGRAL = 500.0f;
 static const uint8_t BNO055_DIRECCION_I2C = 0x28;  // Sin pin ADR = 0x28
 
 // ---------------------------------------------------------------------------
-// QTR-8A — sensor de línea (2 canales analógicos)
-// El ADC del ESP32 da 0-4095. En el QTR, MÁS reflejo (blanco) = valor MÁS BAJO.
-// La línea blanca se detecta como una caída de QTR_MARGEN_LINEA por debajo
-// de la base del campo (verde), medida por calibración al arranque.
+// QTR-8A — DESACTIVADO (modo sumo, sin línea)
 // ---------------------------------------------------------------------------
-static const uint8_t PIN_QTR_1 = 36;  // VP
-static const uint8_t PIN_QTR_2 = 39;  // VN
+static const uint8_t PIN_QTR_1 = 36;
+static const uint8_t PIN_QTR_2 = 39;
 static const uint8_t QTR_NUM_CANALES = 2;
-static const uint16_t QTR_MARGEN_LINEA = 700;  // Caída mínima vs base para línea
+static const uint16_t QTR_MARGEN_LINEA = 700;
 
 // ---------------------------------------------------------------------------
 // Cámara — centro horizontal del frame (ancho / 2)
@@ -136,15 +133,7 @@ static const float CAM_CENTRO_X = 320.0f;  // VGA por defecto (USAR_VGA activo)
 static const float UMBRAL_DESPEJE      = 140.0f;
 static const float HISTERESIS_DESPEJE  =  30.0f; // Entra a DESPEJANDO en <110, sale en >170
 
-// Duración mínima de evasión de rival (ms)
-static const unsigned long TIEMPO_MIN_EVASION_RIVAL_MS = 400;
-
-// ---------------------------------------------------------------------------
-// Evasión de línea — tiempos (ms) y velocidad del giro brusco
-// ---------------------------------------------------------------------------
-static const unsigned long EVASION_LINEA_RETRO_MS = 500;   // retroceso
-static const unsigned long EVASION_LINEA_GIRO_MS  = 450;   // pivot
-static const int           EVASION_LINEA_VEL      = 230;   // velocidad del pivot
+// (Evasión de línea y rival eliminada — modo ataque)
 
 // ---------------------------------------------------------------------------
 // Comunicación — timeout de la cámara (ms)
@@ -152,12 +141,10 @@ static const int           EVASION_LINEA_VEL      = 230;   // velocidad del pivo
 static const unsigned long TIMEOUT_CAMARA_MS = 500;
 
 // ---------------------------------------------------------------------------
-// Patrullaje — el robot nunca se detiene; barre su zona buscando el balón.
-// Avanza en serpentina (curva un lado, luego el otro). La línea blanca y los
-// rivales lo mantienen dentro de su mitad de la cancha.
+// Patrullaje — velocidad máxima. Nunca se detiene.
 // ---------------------------------------------------------------------------
-static const int           PATRULLA_VEL_RAPIDA   = 170;   // rueda exterior
-static const int           PATRULLA_VEL_LENTA    = 90;    // rueda interior
-static const unsigned long PATRULLA_SEMIPERIODO_MS = 1200; // cambio de lado
+static const int           PATRULLA_VEL_RAPIDA   = 255;   // máxima
+static const int           PATRULLA_VEL_LENTA    = 180;   // rueda interior (giro amplio)
+static const unsigned long PATRULLA_SEMIPERIODO_MS = 1000; // cambio de lado
 
 #endif // CONFIG_H
