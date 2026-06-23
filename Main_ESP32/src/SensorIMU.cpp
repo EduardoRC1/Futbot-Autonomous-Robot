@@ -1,5 +1,6 @@
 #include "SensorIMU.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include <Wire.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -9,7 +10,7 @@ static bool imuActiva = false;
 static float offsetBrujula = 0.0f;
 
 bool inicializarIMU() {
-    Serial.println("[IMU] Iniciando BNO055...");
+    dualPrintln("[IMU] Iniciando BNO055...");
 
     for (int intento = 1; intento <= 3; intento++) {
         if (bno.begin(OPERATION_MODE_NDOF)) {
@@ -20,17 +21,17 @@ bool inicializarIMU() {
             sensors_event_t evento;
             bno.getEvent(&evento, Adafruit_BNO055::VECTOR_EULER);
             offsetBrujula = evento.orientation.x;
-            Serial.printf("[IMU] BNO055 OK en 0x%02X (intento %d)\n",
+            dualPrintf("[IMU] BNO055 OK en 0x%02X (intento %d)\n",
                           BNO055_DIRECCION_I2C, intento);
-            Serial.printf("[IMU] Offset de brujula: %.1f° (esta direccion = 0°)\n",
+            dualPrintf("[IMU] Offset de brujula: %.1f (esta direccion = 0)\n",
                           offsetBrujula);
             return true;
         }
-        Serial.printf("[IMU] BNO055 intento %d fallido\n", intento);
+        dualPrintf("[IMU] BNO055 intento %d fallido\n", intento);
         delay(200);
     }
 
-    Serial.println("[IMU] ERROR: BNO055 no respondió después de 3 intentos");
+    dualPrintln("[IMU] ERROR: BNO055 no respondio despues de 3 intentos");
     imuActiva = false;
     return false;
 }

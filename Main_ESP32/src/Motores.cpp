@@ -1,5 +1,6 @@
 #include "Motores.h"
 #include "Config.h"
+#include "DualSerial.h"
 #include <Arduino.h>
 
 static const unsigned long MOTOR_WATCHDOG_MS = 250;
@@ -19,7 +20,7 @@ void inicializarMotores() {
     ledcAttachPin(PIN_M2_L_PWM, PWM_CH_M2_L);
 
     detenerRobot();
-    Serial.println("[Motores] Inicializados");
+    dualPrintln("[Motores] Inicializados");
 }
 
 void verificarWatchdogMotores() {

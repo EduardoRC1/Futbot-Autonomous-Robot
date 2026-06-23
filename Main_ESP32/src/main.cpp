@@ -15,7 +15,7 @@
 
 #include <Arduino.h>
 #include <esp_task_wdt.h>
-#include "BluetoothSerial.h"
+#include "DualSerial.h"
 #include "Config.h"
 #include "BusI2C.h"
 #include "SensoresToF.h"
@@ -30,79 +30,73 @@
 // Monitor inalámbrico por Bluetooth (app: "Serial Bluetooth Terminal" en Android)
 BluetoothSerial SerialBT;
 
-// Envía un mensaje por USB y por Bluetooth a la vez
-static void enviarDual(const char* msg) {
-    Serial.print(msg);
-    SerialBT.print(msg);
-}
-
 void setup() {
     Serial.begin(115200);
     SerialBT.begin("Futbot_Monitor");
     delay(300);
 
-    Serial.println("\n Arrancando Eva!");
+    dualPrintln("\n Arrancando Eva!");
 
     // --- Paso 1: Bus I2C ---
     if (!inicializarBusI2C()) {
-        Serial.println("FATAL: Bus I2C no disponible");
+        dualPrintln("FATAL: Bus I2C no disponible");
         while (true) delay(1000);
     }
-    Serial.println("[I2C] Escaneo inicial:");
+    dualPrintln("[I2C] Escaneo inicial:");
     escanearBusI2C();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 2: Sensores ToF ---
     bool tofOK = inicializarSensoresToF();
     if (!tofOK) {
-        Serial.println("AVISO: Ningún sensor ToF respondió — continuando sin ellos");
+        dualPrintln("AVISO: Ningun sensor ToF respondio — continuando sin ellos");
     }
-    Serial.println("[I2C] Escaneo post-ToF:");
+    dualPrintln("[I2C] Escaneo post-ToF:");
     escanearBusI2C();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 3: IMU ---
     inicializarIMU();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 4: Sensor de línea (DESACTIVADO — modo sumo) ---
-    Serial.println("[Linea] DESACTIVADO (modo sumo)");
-    Serial.println();
+    dualPrintln("[Linea] DESACTIVADO (modo sumo)");
+    dualPrintln();
 
     // --- Paso 5: Motores ---
     inicializarMotores();
     if (INVERTIR_MOTOR_IZQ || INVERTIR_MOTOR_DER || INTERCAMBIAR_MOTORES)
-        Serial.printf("[Motores] Inv I=%d D=%d | Swap=%d\n",
+        dualPrintf("[Motores] Inv I=%d D=%d | Swap=%d\n",
                       INVERTIR_MOTOR_IZQ, INVERTIR_MOTOR_DER, INTERCAMBIAR_MOTORES);
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 6: Odometría ---
     inicializarOdometria();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 7: PID ---
     inicializarPID();
-    Serial.printf("[PID] Inicializado (Kp=%.2f Ki=%.2f Kd=%.2f)\n", Kp, Ki, Kd);
-    Serial.println();
+    dualPrintf("[PID] Inicializado (Kp=%.2f Ki=%.2f Kd=%.2f)\n", Kp, Ki, Kd);
+    dualPrintln();
 
     // --- Paso 8: Radio ---
     inicializarRadio();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 9: Estrategia ---
     inicializarEstrategia();
-    Serial.println();
+    dualPrintln();
 
     // --- Paso 10: Watchdog — reinicia el ESP32 si el loop se cuelga >3s ---
     esp_err_t wdtErr = esp_task_wdt_init(3, true);
     if (wdtErr == ESP_OK || wdtErr == ESP_ERR_INVALID_STATE) {
         esp_task_wdt_add(NULL);
-        Serial.println("[WDT] Watchdog activo (3s)");
+        dualPrintln("[WDT] Watchdog activo (3s)");
     } else {
-        Serial.printf("[WDT] No se pudo activar (err=%d)\n", wdtErr);
+        dualPrintf("[WDT] No se pudo activar (err=%d)\n", wdtErr);
     }
 
-    Serial.println("===== Listo — loop principal =====\n");
+    dualPrintln("===== Listo — loop principal =====\n");
 }
 
 static unsigned long ultimoDiag = 0;
@@ -141,15 +135,7 @@ void loop() {
         bool opI = detectarOponenteIzquierda();
         bool opD = detectarOponenteDerecha();
 
-        char buffer[256];
-        snprintf(buffer, sizeof(buffer),
-                 "Distancias -> F:%umm | I:%umm | D:%umm\n",
-                 obtenerDistanciaFrente(), obtenerDistanciaIzquierda(),
-                 obtenerDistanciaDerecha());
-        SerialBT.print(buffer);
-
-        snprintf(buffer, sizeof(buffer),
-                 "[DIAG] Estado=%s | ToF F=%s(%umm) I=%s(%umm) D=%s(%umm)"
+        dualPrintf("[DIAG] Estado=%s | ToF F=%s(%umm) I=%s(%umm) D=%s(%umm)"
                  " | Balon=%s dist=%.0f | Cam=%s (msgs=%lu)\n",
                  nombreEstado(obtenerEstadoActual()),
                  opF ? "SI" : "no", obtenerDistanciaFrente(),
@@ -159,7 +145,6 @@ void loop() {
                  datosCamara.distanciaEstimada,
                  camaraConectada() ? "OK" : "SIN_CONEXION",
                  obtenerContadorMensajes());
-        enviarDual(buffer);
     }
 
     // 7. Pequeña pausa para no saturar el bus
