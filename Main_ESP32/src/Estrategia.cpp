@@ -1,6 +1,5 @@
 #include "Estrategia.h"
 #include "SensoresToF.h"
-#include "SensorLinea.h"
 #include "Motores.h"
 #include "Comunicacion.h"
 #include "ControlPID.h"
@@ -9,25 +8,15 @@
 static EstadoRobot estadoActual  = PATRULLANDO;
 static EstadoRobot estadoPrevio  = PATRULLANDO;
 
-// Estado no-bloqueante para evasión de línea
-static unsigned long tiempoInicioEvasion = 0;
-static bool          evasionActiva       = false;
-static uint8_t       faseEvasion         = 0;
-static int8_t        ladoLineaDetectado  = -1;
-
-// Estado no-bloqueante para evasión de rival (duración mínima)
-static unsigned long tiempoInicioEvasionRival = 0;
-static bool          evasionRivalActiva       = false;
+// Duración mínima de ataque — evita oscilar entre estados
+static unsigned long tiempoInicioAtaqueRival = 0;
+static bool          ataqueRivalActivo       = false;
 
 void inicializarEstrategia() {
     estadoActual             = PATRULLANDO;
     estadoPrevio             = PATRULLANDO;
-    evasionActiva            = false;
-    faseEvasion              = 0;
-    tiempoInicioEvasion      = 0;
-    ladoLineaDetectado       = -1;
-    evasionRivalActiva       = false;
-    tiempoInicioEvasionRival = 0;
+    ataqueRivalActivo        = false;
+    tiempoInicioAtaqueRival  = 0;
 }
 
 EstadoRobot obtenerEstadoActual() { return estadoActual; }
@@ -37,56 +26,41 @@ const char* nombreEstado(EstadoRobot estado) {
         case PATRULLANDO:        return "PATRULLANDO";
         case INTERCEPTANDO:      return "INTERCEPTANDO";
         case DESPEJANDO:         return "DESPEJANDO";
-        case EVADIENDO_LINEA:    return "EVAD_LINEA";
-        case EVADIENDO_RIVAL:    return "EVAD_RIVAL";
+        case ATACANDO_RIVAL:     return "ATACANDO";
         default:                 return "???";
     }
 }
 
 void evaluarEntorno() {
-    // Si la evasión de línea está en progreso, dejarla terminar sin
-    // re-evaluar — la secuencia retroceder→girar debe completarse.
-    if (evasionActiva) return;
-
-    // Si la evasión de rival tiene duración mínima activa, no re-evaluar.
-    if (evasionRivalActiva &&
-        (millis() - tiempoInicioEvasionRival < TIEMPO_MIN_EVASION_RIVAL_MS)) {
+    // Si el ataque a rival tiene duración mínima activa, no re-evaluar.
+    if (ataqueRivalActivo &&
+        (millis() - tiempoInicioAtaqueRival < TIEMPO_MIN_ATAQUE_RIVAL_MS)) {
         return;
     }
-    evasionRivalActiva = false;
+    ataqueRivalActivo = false;
 
-    // Prioridad 1: línea blanca
-    if (detectarLineaBlanca()) {
-        ladoLineaDetectado = obtenerLadoLinea();
-        estadoActual = EVADIENDO_LINEA;
-        return;
-    }
-
-    // Prioridad 2: oponente detectado
+    // Prioridad 1: ToF detecta algo → ATACAR (girar hacia ello y embestir)
     // EXCEPCIÓN: si la cámara ve el balón cerca Y el ToF frontal detecta algo,
-    // es probable que sea el balón — NO evadir.
+    // es probable que sea el balón — NO atacar.
     bool rivalFrente = detectarOponenteFrente();
     bool rivalIzq    = detectarOponenteIzquierda();
     bool rivalDer    = detectarOponenteDerecha();
 
     if (rivalFrente && datosCamara.balonDetectado &&
         datosCamara.distanciaEstimada < UMBRAL_DESPEJE + 20.0f) {
-        // ToF frontal detecta algo pero la cámara ve el balón cerca → es el balón
         rivalFrente = false;
     }
 
     if (rivalFrente || rivalIzq || rivalDer) {
-        if (estadoActual != EVADIENDO_RIVAL) {
-            evasionRivalActiva       = true;
-            tiempoInicioEvasionRival = millis();
+        if (estadoActual != ATACANDO_RIVAL) {
+            ataqueRivalActivo       = true;
+            tiempoInicioAtaqueRival = millis();
         }
-        estadoActual = EVADIENDO_RIVAL;
+        estadoActual = ATACANDO_RIVAL;
         return;
     }
 
-    // Prioridad 3: balón — solo datos de cámara, sin odometría.
-    // Histéresis: entra a DESPEJANDO en < (UMBRAL - HISTERESIS),
-    //             sale de DESPEJANDO en > (UMBRAL + HISTERESIS).
+    // Prioridad 2: balón — solo datos de cámara, sin odometría.
     if (datosCamara.balonDetectado) {
         float dist = datosCamara.distanciaEstimada;
         if (estadoActual == DESPEJANDO) {
@@ -104,7 +78,6 @@ void evaluarEntorno() {
 }
 
 void ejecutarJugadaActual() {
-    // Reset PID al entrar a INTERCEPTANDO desde otro estado
     if (estadoActual == INTERCEPTANDO && estadoPrevio != INTERCEPTANDO) {
         inicializarPID();
     }
@@ -112,64 +85,21 @@ void ejecutarJugadaActual() {
 
     switch (estadoActual) {
 
-    case EVADIENDO_LINEA: {
-        unsigned long ahora = millis();
-        if (!evasionActiva) {
-            evasionActiva       = true;
-            faseEvasion         = 0;
-            tiempoInicioEvasion = ahora;
-        }
-        if (faseEvasion == 0) {
-            moverMotores(-255, -255);
-            if (ahora - tiempoInicioEvasion >= EVASION_LINEA_RETRO_MS) {
-                faseEvasion         = 1;
-                tiempoInicioEvasion = ahora;
-            }
-        } else {
-            // Pivot brusco al lado opuesto de la línea detectada
-            if (ladoLineaDetectado == 1) {
-                moverMotores(-EVASION_LINEA_VEL, EVASION_LINEA_VEL);
-            } else {
-                moverMotores(EVASION_LINEA_VEL, -EVASION_LINEA_VEL);
-            }
-            if (ahora - tiempoInicioEvasion >= EVASION_LINEA_GIRO_MS) {
-                evasionActiva = false;
-                faseEvasion   = 0;
-                estadoActual  = PATRULLANDO;
-            }
-        }
-        break;
-    }
-
-    case EVADIENDO_RIVAL: {
+    case ATACANDO_RIVAL: {
         bool opF = detectarOponenteFrente();
         bool opI = detectarOponenteIzquierda();
         bool opD = detectarOponenteDerecha();
 
-        if ((opF && opI && opD) || (opI && opD)) {
-            // Bloqueado por ambos lados (o por todos) → retroceder
-            moverMotores(-150, -150);
-        } else if (opF && !opI && !opD) {
-            // Solo frente → retroceder y girar al lado con más espacio
-            if (obtenerDistanciaIzquierda() >= obtenerDistanciaDerecha())
-                moverMotores(-100, -200);  // retrocede curvando a la izquierda
-            else
-                moverMotores(-200, -100);  // retrocede curvando a la derecha
-        } else if (opF && opI) {
-            // Frente + izquierda → retroceder curvando a la derecha
-            moverMotores(-200, -100);
-        } else if (opF && opD) {
-            // Frente + derecha → retroceder curvando a la izquierda
-            moverMotores(-100, -200);
+        if (opF) {
+            moverMotores(255, 255);
         } else if (opI && !opD) {
-            // Solo izquierda → girar derecha (alejarse)
-            moverMotores(150, -150);
+            moverMotores(-200, 200);
         } else if (opD && !opI) {
-            // Solo derecha → girar izquierda (alejarse)
-            moverMotores(-150, 150);
+            moverMotores(200, -200);
+        } else if (opI && opD) {
+            moverMotores(255, 255);
         } else {
-            // Caso residual → retroceder
-            moverMotores(-150, -150);
+            moverMotores(200, 200);
         }
         break;
     }
@@ -183,21 +113,15 @@ void ejecutarJugadaActual() {
     }
 
     case DESPEJANDO: {
-        // Avanzar a máxima velocidad MIENTRAS corrige dirección.
-        // Si la portería está alineada → recto a 255.
-        // Si no, avanzar con diferencial para corregir sin detenerse.
         if (datosCamara.porteriaEnemigaAlineada) {
             moverMotores(255, 255);
         } else {
             float errorX = datosCamara.coordX - CAM_CENTRO_X;
             if (errorX > 20.0f) {
-                // Balón a la derecha → curvar a la derecha (rápido/lento)
                 moverMotores(255, 120);
             } else if (errorX < -20.0f) {
-                // Balón a la izquierda → curvar a la izquierda
                 moverMotores(120, 255);
             } else {
-                // Centrado → recto a máxima
                 moverMotores(255, 255);
             }
         }
@@ -205,9 +129,6 @@ void ejecutarJugadaActual() {
     }
 
     case PATRULLANDO: {
-        // Nunca se detiene: avanza en serpentina barriendo su zona. Curva un
-        // lado y luego el otro para escanear; la línea blanca y los rivales lo
-        // mantienen dentro de su mitad de la cancha.
         bool curvaDerecha = (millis() / PATRULLA_SEMIPERIODO_MS) % 2 == 0;
         if (curvaDerecha)
             moverMotores(PATRULLA_VEL_RAPIDA, PATRULLA_VEL_LENTA);

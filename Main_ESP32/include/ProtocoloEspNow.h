@@ -39,7 +39,7 @@ typedef struct MensajeVision {
   const uint8_t direccionMacCamara[]  = {0x88, 0x57, 0x21, 0xC2, 0x0B, 0x68};  // MAC real de Cámara A
 #elif defined(ROBOT_HOTFIX2)
   // Cerebro A (hardware nuevo) + Cámara B (hardware)
-  const uint8_t direccionMacCerebro[] = {0x68, 0x09, 0x47, 0x47, 0x27, 0xA0};  // MAC real del Cerebro A (nuevo)
+  const uint8_t direccionMacCerebro[] = {0x68, 0x09, 0x47, 0x47, 0x04, 0x50};  // MAC real del Cerebro A (nuevo)
   const uint8_t direccionMacCamara[]  = {0x88, 0x57, 0x21, 0xC1, 0x7B, 0x0C};  // MAC real de Cámara B (nueva)
 #else
   #error "Definir ROBOT_A, ROBOT_B, ROBOT_HOTFIX o ROBOT_HOTFIX2 en ProtocoloEspNow.h"
