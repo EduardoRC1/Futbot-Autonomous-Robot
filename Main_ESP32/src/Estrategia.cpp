@@ -8,9 +8,15 @@
 static EstadoRobot estadoActual  = PATRULLANDO;
 static EstadoRobot estadoPrevio  = PATRULLANDO;
 
+// Duración mínima de ataque — evita oscilar entre estados
+static unsigned long tiempoInicioAtaqueRival = 0;
+static bool          ataqueRivalActivo       = false;
+
 void inicializarEstrategia() {
-    estadoActual  = PATRULLANDO;
-    estadoPrevio  = PATRULLANDO;
+    estadoActual             = PATRULLANDO;
+    estadoPrevio             = PATRULLANDO;
+    ataqueRivalActivo        = false;
+    tiempoInicioAtaqueRival  = 0;
 }
 
 EstadoRobot obtenerEstadoActual() { return estadoActual; }
@@ -26,17 +32,35 @@ const char* nombreEstado(EstadoRobot estado) {
 }
 
 void evaluarEntorno() {
-    // Prioridad 1: ToF detecta algo -> ATACAR (girar hacia ello y embestir)
+    // Si el ataque a rival tiene duración mínima activa, no re-evaluar.
+    if (ataqueRivalActivo &&
+        (millis() - tiempoInicioAtaqueRival < TIEMPO_MIN_ATAQUE_RIVAL_MS)) {
+        return;
+    }
+    ataqueRivalActivo = false;
+
+    // Prioridad 1: ToF detecta algo → ATACAR (girar hacia ello y embestir)
+    // EXCEPCIÓN: si la cámara ve el balón cerca Y el ToF frontal detecta algo,
+    // es probable que sea el balón — NO atacar.
     bool rivalFrente = detectarOponenteFrente();
     bool rivalIzq    = detectarOponenteIzquierda();
     bool rivalDer    = detectarOponenteDerecha();
 
+    if (rivalFrente && datosCamara.balonDetectado &&
+        datosCamara.distanciaEstimada < UMBRAL_DESPEJE + 20.0f) {
+        rivalFrente = false;
+    }
+
     if (rivalFrente || rivalIzq || rivalDer) {
+        if (estadoActual != ATACANDO_RIVAL) {
+            ataqueRivalActivo       = true;
+            tiempoInicioAtaqueRival = millis();
+        }
         estadoActual = ATACANDO_RIVAL;
         return;
     }
 
-    // Prioridad 2: balón detectado por cámara
+    // Prioridad 2: balón — solo datos de cámara, sin odometría.
     if (datosCamara.balonDetectado) {
         float dist = datosCamara.distanciaEstimada;
         if (estadoActual == DESPEJANDO) {
@@ -45,7 +69,7 @@ void evaluarEntorno() {
         } else {
             if (dist < UMBRAL_DESPEJE - HISTERESIS_DESPEJE)
                 estadoActual = DESPEJANDO;
-            else
+            else if (dist >= UMBRAL_DESPEJE - HISTERESIS_DESPEJE)
                 estadoActual = INTERCEPTANDO;
         }
     } else {
@@ -67,20 +91,15 @@ void ejecutarJugadaActual() {
         bool opD = detectarOponenteDerecha();
 
         if (opF) {
-            // Rival al frente -> embestir recto a maxima
             moverMotores(255, 255);
         } else if (opI && !opD) {
-            // Solo izquierda -> pivotear a la izquierda y embestir
-            moverMotores(-255, 255);
+            moverMotores(-200, 200);
         } else if (opD && !opI) {
-            // Solo derecha -> pivotear a la derecha y embestir
-            moverMotores(255, -255);
+            moverMotores(200, -200);
         } else if (opI && opD) {
-            // Ambos lados -> embestir recto
             moverMotores(255, 255);
         } else {
-            // Caso residual -> avanzar recto
-            moverMotores(255, 255);
+            moverMotores(200, 200);
         }
         break;
     }
@@ -88,8 +107,8 @@ void ejecutarJugadaActual() {
     case INTERCEPTANDO: {
         float errorX = datosCamara.coordX - CAM_CENTRO_X;
         int ajuste   = calcularVelocidadPID(errorX);
-        moverMotores(constrain(255 + ajuste, -255, 255),
-                     constrain(255 - ajuste, -255, 255));
+        moverMotores(constrain(200 + ajuste, -255, 255),
+                     constrain(200 - ajuste, -255, 255));
         break;
     }
 
@@ -99,9 +118,9 @@ void ejecutarJugadaActual() {
         } else {
             float errorX = datosCamara.coordX - CAM_CENTRO_X;
             if (errorX > 20.0f) {
-                moverMotores(255, 150);
+                moverMotores(255, 120);
             } else if (errorX < -20.0f) {
-                moverMotores(150, 255);
+                moverMotores(120, 255);
             } else {
                 moverMotores(255, 255);
             }

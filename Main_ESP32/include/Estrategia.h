@@ -2,7 +2,7 @@
 #define ESTRATEGIA_H
 
 // ============================================================================
-//  Estrategia.h — Máquina de estados para el robot (modo sumo/ataque)
+//  Estrategia.h — Máquina de estados para el robot
 // ============================================================================
 
 #include <Arduino.h>
