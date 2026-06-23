@@ -2,7 +2,7 @@
 #define ESTRATEGIA_H
 
 // ============================================================================
-//  Estrategia.h — Máquina de estados para el robot defensa
+//  Estrategia.h — Máquina de estados para el robot (modo sumo/ataque)
 // ============================================================================
 
 #include <Arduino.h>
@@ -11,8 +11,7 @@ enum EstadoRobot {
     PATRULLANDO,        // Sin balón: se mueve barriendo su zona (nunca se detiene)
     INTERCEPTANDO,
     DESPEJANDO,
-    EVADIENDO_LINEA,
-    EVADIENDO_RIVAL
+    ATACANDO_RIVAL      // ToF detecta algo → girar hacia ello y embestir a 255
 };
 
 void inicializarEstrategia();
